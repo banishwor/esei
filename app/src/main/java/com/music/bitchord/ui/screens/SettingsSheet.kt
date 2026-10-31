@@ -1642,7 +1642,7 @@ fun SettingsScreen(
         if (section == null && searchQuery.isBlank()) {
         Text(
             text = buildAnnotatedString {
-                append("bitchord $version  ")
+                append("esei $version  ")
                 val linkStyles = TextLinkStyles(
                     style = SpanStyle(
                         color = MaterialTheme.colorScheme.primary,
@@ -1665,6 +1665,8 @@ fun SettingsScreen(
                     append("Website")
                 }
                 append("\n~YouTube Music & Listen Together Backend")
+                append("\nDeveloper: Banishwor Athokpam")
+                append("\nBased on BitChord by kushagrasinghx")
             },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
