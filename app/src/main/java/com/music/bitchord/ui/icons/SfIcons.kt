@@ -17,7 +17,9 @@ import com.composables.sfsymbols.monochrome.SFArrowUpCircle
 import com.composables.sfsymbols.monochrome.SFArrowUpDocument
 import com.composables.sfsymbols.monochrome.SFArrowUpLeftAndArrowDownRight
 import com.composables.sfsymbols.monochrome.SFArrowUturnBackward
+import com.composables.sfsymbols.monochrome.SFBriefcase
 import com.composables.sfsymbols.monochrome.SFCableConnector
+import com.composables.sfsymbols.monochrome.SFCamera
 import com.composables.sfsymbols.monochrome.SFCellularbars
 import com.composables.sfsymbols.monochrome.SFCharacterBubble
 import com.composables.sfsymbols.monochrome.SFChartBar
@@ -26,6 +28,7 @@ import com.composables.sfsymbols.monochrome.SFCheckmark
 import com.composables.sfsymbols.monochrome.SFCheckmarkCircle
 import com.composables.sfsymbols.monochrome.SFCheckmarkIcloud
 import com.composables.sfsymbols.monochrome.SFChevronBackward
+import com.composables.sfsymbols.monochrome.SFChevronLeftForwardslashChevronRight
 import com.composables.sfsymbols.monochrome.SFChevronRight
 import com.composables.sfsymbols.monochrome.SFCircleLefthalfFilled
 import com.composables.sfsymbols.monochrome.SFClock
@@ -98,6 +101,7 @@ import com.composables.sfsymbols.monochrome.SFTag
 import com.composables.sfsymbols.monochrome.SFTextAlignleft
 import com.composables.sfsymbols.monochrome.SFTextBadgeMinus
 import com.composables.sfsymbols.monochrome.SFTextBadgePlus
+import com.composables.sfsymbols.monochrome.SFTextBubble
 import com.composables.sfsymbols.monochrome.SFTextformat
 import com.composables.sfsymbols.monochrome.SFTextLineFirstAndArrowtriangleForward
 import com.composables.sfsymbols.monochrome.SFTextLineLastAndArrowtriangleForward
@@ -139,12 +143,15 @@ object SfIcons {
     val Bluetooth: ImageVector by lazy { bold(SfSymbols.Monochrome.SFHeadphones) }
     val BlurOff: ImageVector by lazy { bold(SfSymbols.Monochrome.SFDrop) }
     val BlurOn: ImageVector by lazy { bold(SfSymbols.Monochrome.SFDropHalffull) }
+    val Briefcase: ImageVector by lazy { bold(SfSymbols.Monochrome.SFBriefcase) }
     val Brightness: ImageVector by lazy { bold(SfSymbols.Monochrome.SFSunMax) }
     val Cached: ImageVector by lazy { bold(SfSymbols.Monochrome.SFArrowTrianglehead2Clockwise) }
+    val Camera: ImageVector by lazy { bold(SfSymbols.Monochrome.SFCamera) }
     val Check: ImageVector by lazy { bold(SfSymbols.Monochrome.SFCheckmark) }
     val ChevronRight: ImageVector by lazy { bold(SfSymbols.Monochrome.SFChevronRight) }
     val Clock: ImageVector by lazy { bold(SfSymbols.Monochrome.SFClock) }
     val Cloud: ImageVector by lazy { bold(SfSymbols.Monochrome.SFIcloud) }
+    val Code: ImageVector by lazy { bold(SfSymbols.Monochrome.SFChevronLeftForwardslashChevronRight) }
     val CloudDone: ImageVector by lazy { bold(SfSymbols.Monochrome.SFCheckmarkIcloud) }
     val CloudOff: ImageVector by lazy { bold(SfSymbols.Monochrome.SFIcloudSlash) }
     val ContentCopy: ImageVector by lazy { bold(SfSymbols.Monochrome.SFDocumentOnDocument) }
@@ -194,6 +201,7 @@ object SfIcons {
     val Storage: ImageVector by lazy { bold(SfSymbols.Monochrome.SFInternaldrive) }
     val SurroundSound: ImageVector by lazy { bold(SfSymbols.Monochrome.SFHifispeaker) }
     val SwitchAccount: ImageVector by lazy { bold(SfSymbols.Monochrome.SFPersonCropCircle) }
+    val TextBubble: ImageVector by lazy { bold(SfSymbols.Monochrome.SFTextBubble) }
     val Translate: ImageVector by lazy { bold(SfSymbols.Monochrome.SFCharacterBubble) }
     val Tune: ImageVector by lazy { bold(SfSymbols.Monochrome.SFSliderHorizontal3) }
     val Usb: ImageVector by lazy { bold(SfSymbols.Monochrome.SFCableConnector) }

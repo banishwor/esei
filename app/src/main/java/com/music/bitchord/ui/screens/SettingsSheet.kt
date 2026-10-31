@@ -89,7 +89,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import com.music.bitchord.ui.components.IosSwitch
@@ -394,6 +396,7 @@ fun SettingsScreen(
     }
     var showListenBrainzTokenDialog by remember { mutableStateOf(false) }
     var showLastfmLoginDialog by remember { mutableStateOf(false) }
+    var showDeveloperCard by remember { mutableStateOf(false) }
     val scrobbleScope = rememberCoroutineScope()
 
     val version = remember(context) {
@@ -1627,6 +1630,22 @@ fun SettingsScreen(
             }
         }
 
+        // The page's sign-off rather than one more setting: who made this
+        // fork, and where he can be found. Main page only — a category's page
+        // is about its own rows — though the search still reaches it by any
+        // of the words on the row, his name among them.
+        if (section == null) SearchableSettingsGroup(search, header = "About") {
+            val developerTitle = "About the Developer"
+            row(developerTitle, "Banishwor Athokpam", "developer", "author", "github", "instagram", "facebook") {
+                SettingsRow(
+                    icon = SfIcons.Person,
+                    title = developerTitle,
+                    subtitle = "Banishwor Athokpam",
+                    onClick = { showDeveloperCard = true },
+                )
+            }
+        }
+
         // Read after every group above has had its turn at the query, which is
         // what makes this an accurate "nothing here" rather than a guess.
         if (searching && !search.anyMatch) {
@@ -1668,6 +1687,10 @@ fun SettingsScreen(
                 .padding(top = 24.dp, bottom = 8.dp),
         )
         }
+    }
+
+    if (showDeveloperCard) {
+        DeveloperCardSheet(onDismiss = { showDeveloperCard = false })
     }
 
     // Everything in the Cached songs folder goes with it, so say so first.
@@ -1879,6 +1902,118 @@ fun SettingsScreen(
         )
     }
 
+}
+
+/**
+ * The card behind the main page's "About the Developer" row: who made this
+ * fork of the app, and where he can be found. The links open in the browser —
+ * nothing here is a setting, so the sheet keeps no state of its own. The
+ * colophon's attribution below the settings list is a separate, legal line
+ * and is deliberately not repeated here.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeveloperCardSheet(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState()
+    fun open(url: String) {
+        runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // The launcher icon as the card's portrait, drawn the way the
+            // icon picker's default tile draws it: an adaptive icon needs an
+            // ImageView, not a painter.
+            AndroidView(
+                factory = { ctx ->
+                    android.widget.ImageView(ctx).apply {
+                        setImageResource(R.mipmap.ic_launcher)
+                    }
+                },
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+            )
+            Text(
+                text = "Banishwor Athokpam",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 14.dp),
+            )
+            Text(
+                text = "Software Developer from Manipur, India",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp),
+            )
+            Text(
+                text = "Developer of Esei — preserving Meitei culture through technology",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp),
+            )
+            // One settings card of links, dividers and all, so the sheet
+            // reads as part of the page it was opened from.
+            SettingsGroup(topSpacing = 22.dp) {
+                SettingsRow(
+                    icon = SfIcons.Code,
+                    title = "GitHub",
+                    subtitle = "github.com/banishwor",
+                    onClick = { open("https://github.com/banishwor") },
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = SfIcons.Language,
+                    title = "Website",
+                    subtitle = "banishwor.github.io",
+                    onClick = { open("https://banishwor.github.io") },
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = SfIcons.Camera,
+                    title = "Instagram",
+                    subtitle = "@banishwor_ath",
+                    onClick = { open("https://www.instagram.com/banishwor_ath/") },
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = SfIcons.Groups,
+                    title = "Facebook",
+                    subtitle = "facebook.com/banishwor",
+                    onClick = { open("https://www.facebook.com/banishwor") },
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = SfIcons.Briefcase,
+                    title = "LinkedIn",
+                    subtitle = "linkedin.com/in/banishwor",
+                    onClick = { open("https://www.linkedin.com/in/banishwor/") },
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = SfIcons.TextBubble,
+                    title = "X",
+                    subtitle = "@banishwor",
+                    onClick = { open("https://x.com/banishwor") },
+                )
+            }
+        }
+    }
 }
 
 /** "3 months of listening" — the unit a backup is actually measured in. */
