@@ -1186,12 +1186,13 @@ object AppSettings {
             meteredConnection.value = runCatching {
                 if (manager.activeNetwork == null) null else manager.isActiveNetworkMetered
             }.getOrNull()
-            runCatching {
+            val online = runCatching {
                 val network = manager.activeNetwork
-                hasNetwork.value = network != null &&
+                network != null &&
                     manager.getNetworkCapabilities(network)
                         ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-            }
+            }.getOrNull()
+            if (online != null) hasNetwork.value = online
         }
         refresh()
         runCatching {
