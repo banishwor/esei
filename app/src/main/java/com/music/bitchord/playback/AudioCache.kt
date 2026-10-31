@@ -32,6 +32,7 @@ import com.music.bitchord.data.sources.SourceResolver
 import com.music.bitchord.data.sources.SourceStream
 import com.music.bitchord.data.sources.TrackMatcher
 import com.music.bitchord.download.Downloads
+import com.music.bitchord.download.EncryptedStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1186,6 +1187,7 @@ object AudioCache {
     fun playbackFactory(upstream: DataSource.Factory): DataSource.Factory = DataSource.Factory {
         val cacheDs = cacheFactory(upstream).createDataSource()
         val upstreamDs = upstream.createDataSource()
+        val decryptDs = DecryptingDataSource()
         object : DataSource {
             private var activeDs: DataSource = cacheDs
 
@@ -1196,11 +1198,20 @@ object AudioCache {
 
             override fun open(dataSpec: DataSpec): Long {
                 val scheme = dataSpec.uri.scheme
-                activeDs = if (scheme == "file" || scheme == "content") {
-                    upstreamDs
-                } else {
-                    settleDirectEntry(dataSpec.uri)
-                    cacheDs
+                activeDs = when {
+                    // An encrypted download is a `file://` uri whose bytes are
+                    // not the audio — see EncryptedStore. It goes to the
+                    // decrypting source rather than the file source, decided
+                    // by the file's own header so a uri read back from a
+                    // restored queue is recognised the same way.
+                    scheme == "file" &&
+                        dataSpec.uri.path?.let { EncryptedStore.isEncrypted(File(it)) } == true ->
+                        decryptDs
+                    scheme == "file" || scheme == "content" -> upstreamDs
+                    else -> {
+                        settleDirectEntry(dataSpec.uri)
+                        cacheDs
+                    }
                 }
                 return activeDs.open(dataSpec)
             }

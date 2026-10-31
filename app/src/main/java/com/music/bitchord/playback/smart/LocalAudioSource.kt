@@ -7,6 +7,8 @@ import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
 import android.system.Os
 import android.util.Log
+import com.music.bitchord.download.EncryptedStore
+import java.io.File
 import java.io.IOException
 import java.util.Locale
 
@@ -71,6 +73,19 @@ internal object LocalAudioSource {
      * Callers must [MediaDataSource.close] the result.
      */
     fun open(resolver: ContentResolver, uri: Uri): MediaDataSource? {
+        // An encrypted download is a local file whose bytes are not the
+        // audio; without this the extractor would be handed ciphertext and
+        // the track would sit at "waiting" exactly as local files did before
+        // this class existed. It is served out of the same reader playback
+        // uses, decrypted range by range.
+        if (uri.scheme == ContentResolver.SCHEME_FILE) {
+            val file = uri.path?.let { File(it) }
+            if (file != null && EncryptedStore.isEncrypted(file)) {
+                return runCatching { EncryptedSource(EncryptedStore.Reader(file)) }
+                    .onFailure { Log.w(TAG, "Cannot open $uri for analysis", it) }
+                    .getOrNull()
+            }
+        }
         val descriptor = runCatching { resolver.openFileDescriptor(uri, "r") }
             .onFailure { Log.w(TAG, "Cannot open $uri for analysis", it) }
             .getOrNull() ?: return null
@@ -113,6 +128,24 @@ internal object LocalAudioSource {
 
         override fun close() {
             runCatching { descriptor.close() }
+        }
+    }
+
+    /** An encrypted download, read as the plaintext it decrypts to. */
+    private class EncryptedSource(
+        private val reader: EncryptedStore.Reader,
+    ) : MediaDataSource() {
+
+        override fun getSize(): Long = reader.plainLength
+
+        override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
+            if (position < 0 || position >= reader.plainLength) return -1
+            if (size <= 0) return 0
+            return reader.readAt(position, buffer, offset, size)
+        }
+
+        override fun close() {
+            runCatching { reader.close() }
         }
     }
 }

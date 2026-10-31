@@ -2137,41 +2137,16 @@ private fun BitChordApp(
 
     // ---- Downloads ----
     // Two permissions, and never both on one device: writing to the shared
-    // Music folder needs storage access below API 29 and none at all from
-    // 29 on, where MediaStore grants an app its own rows; notifications are
-    // only asked for from API 33. So the branches below are mutually exclusive
-    // by SDK level, and nothing here can stack two dialogs on each other.
-    var downloadPending by remember { mutableStateOf<List<Song>>(emptyList()) }
-    /**
-     * What the pending batch was asked for as, held alongside it for the same
-     * reason: the storage-permission dialog is a round trip through another
-     * process, and the release has to survive it or a whole album granted
-     * permission arrives as forty loose tracks.
-     */
-    var downloadPendingFrom by remember { mutableStateOf<DownloadTarget?>(null) }
+    // Downloads used to need storage access below API 29, when they could
+    // land in the shared Music folder, and a whole permission round trip
+    // existed here to hold a batch across that dialog. Downloads are written
+    // to the app's own encrypted storage now (see EncryptedStore), which no
+    // Android version asks a permission for, so a tap goes straight to the
+    // queue. Notifications are only asked for from API 33, inside
+    // [startDownload] below.
     val notifyPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { /* Refusing costs the progress notification, not the download. */ }
-    val storagePermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        val songs = downloadPending
-        val from = downloadPendingFrom
-        downloadPending = emptyList()
-        downloadPendingFrom = null
-        when {
-            songs.isEmpty() -> Unit
-            granted -> {
-                songs.forEach { Downloads.enqueue(context, it, from?.title) }
-                if (from != null) Downloads.markRequested(from.id, songs.map { it.videoId })
-            }
-            // The one case where refusing is fatal: below API 29 there is no
-            // other way to reach the Music folder.
-            else -> Toast
-                .makeText(context, context.getString(R.string.storage_required_save), Toast.LENGTH_SHORT)
-                .show()
-        }
-    }
     val mediaPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -2270,12 +2245,6 @@ private fun BitChordApp(
         val blocked = songs.isNotEmpty() && !AppSettings.downloadsAllowedNow &&
             songs.none { Downloads.servableFromCache(it.videoId) }
         if (songs.isNotEmpty() && !blocked) {
-            val needsStorage = AppSettings.exportDownloads.value && DownloadStore.needsLegacyPermission() &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                ) != PackageManager.PERMISSION_GRANTED
-
             // Asked for here rather than at launch because here is where it means
             // something: a download is the first thing this app does that the user
             // is expected to walk away from.
@@ -2288,14 +2257,8 @@ private fun BitChordApp(
                 notifyPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
 
-            if (needsStorage) {
-                downloadPending = songs
-                downloadPendingFrom = from
-                storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            } else {
-                songs.forEach { Downloads.enqueue(context, it, from?.title) }
-                if (from != null) Downloads.markRequested(from.id, songs.map { it.videoId })
-            }
+            songs.forEach { Downloads.enqueue(context, it, from?.title) }
+            if (from != null) Downloads.markRequested(from.id, songs.map { it.videoId })
             // Said once per addon and reason per session, and only for a batch
             // that will reach the sources at all — a copy out of the song cache
             // never asks them. Without it the addon was passed over in silence
@@ -3113,11 +3076,32 @@ private fun BitChordApp(
                                 val downloadCollections = remember(folderSongs, savedCollections, isDownloads) {
                                     if (isDownloads) Downloads.collectionsAmong(folderSongs) else emptyList()
                                 }
+                                // Downloads only: the line under the list saying
+                                // these are encrypted saves and what they weigh.
+                                // Keyed on the record, so it follows a download
+                                // landing or being deleted while the page is open.
+                                val downloadsFooterNote = if (isDownloads) {
+                                    val savedBytes by produceState(0L, savedDownloads) {
+                                        value = Downloads.savedStorageBytes()
+                                    }
+                                    val note = stringResource(R.string.downloads_encrypted_note)
+                                    if (savedBytes > 0) {
+                                        note + " · " + stringResource(
+                                            R.string.downloads_storage_total,
+                                            android.text.format.Formatter.formatShortFileSize(context, savedBytes),
+                                        )
+                                    } else {
+                                        note
+                                    }
+                                } else {
+                                    null
+                                }
                                 LocalFolder(
                                     state = localFolderStates.getOrPut(page.browseId) { LocalFolderState() },
                                     sort = folderSortOf(page.browseId),
                                     viewType = folderViewTypeOf(page.browseId),
                                     collections = downloadCollections,
+                                    footerNote = downloadsFooterNote,
                                     selectable = isDownloads || isCache,
                                     onOpenGroup = viewModel::openLocalGroup,
                                     onGroupLongPress = { group ->

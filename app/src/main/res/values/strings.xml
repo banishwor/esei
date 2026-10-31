@@ -28,6 +28,8 @@
     <string name="listen_now">Listen Now</string>
     <string name="downloads">Downloads</string>
     <string name="downloaded_songs">Downloaded songs</string>
+    <string name="downloads_encrypted_note">Saved songs are encrypted and play only inside Esei</string>
+    <string name="downloads_storage_total">%1$s saved</string>
     <string name="local_music">Local Music</string>
     <string name="search_source_youtube" translatable="false">YouTube</string>
     <string name="search_source_addons">Addons</string>

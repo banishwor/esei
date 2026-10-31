@@ -115,6 +115,7 @@ import com.music.bitchord.data.model.ShelfItem
 import com.music.bitchord.data.model.artworkAt
 import com.music.bitchord.data.model.QueueTier
 import com.music.bitchord.data.sources.SourceRegistry
+import com.music.bitchord.download.AutoSave
 import com.music.bitchord.download.Downloads
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
@@ -907,7 +908,10 @@ class PlaybackService : MediaLibraryService() {
             // stop being told about play: its sampler measures the gap between
             // ticks, and an unclosed one across a pause is an afternoon on the
             // lock screen arriving as an afternoon of listening.
-            if (!isPlaying) ListeningRecorder.onStopped()
+            if (!isPlaying) {
+                ListeningRecorder.onStopped()
+                AutoSave.onStopped()
+            }
 
             // ListenBrainz: "now playing" on play/resume too, not just on
             // transition — a track started from idle or resumed from pause
@@ -3754,6 +3758,7 @@ class PlaybackService : MediaLibraryService() {
         // this the second play through is a continuation of the first and is
         // never counted.
         ListeningRecorder.onStopped()
+        AutoSave.onStopped()
         val newSong = mediaItem?.toSong()
         val durationMs = exoPlayer.duration.takeIf { it > 0 }
         if (exoPlayer.isPlaying) {
@@ -6487,6 +6492,10 @@ class PlaybackService : MediaLibraryService() {
                     // makes it the right place to count from.
                     player.currentMediaItem?.toSong()?.let {
                         ListeningRecorder.onSample(it, player.duration)
+                        // The same ticks, for the other question they answer:
+                        // whether this track has been listened to enough to be
+                        // worth saving — see [AutoSave].
+                        AutoSave.onSample(this@PlaybackService, it, player.duration)
                     }
                     // Only two primitive preference values. Queue JSON is
                     // written from onTimelineChanged, never from this loop.
@@ -7669,6 +7678,7 @@ class PlaybackService : MediaLibraryService() {
         // Last chance to get the current track's minutes onto disk: the scope is
         // cancelled a few lines down and the sampler goes with it.
         ListeningRecorder.onStopped()
+        AutoSave.onStopped()
         // Discord, on the same terms as the ListenBrainz submit above: the
         // service scope is cancelled a few lines down, and a presence left up
         // would advertise a track that stopped when the process did — until

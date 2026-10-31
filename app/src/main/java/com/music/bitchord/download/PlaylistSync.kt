@@ -1,6 +1,5 @@
 package com.music.bitchord.download
 
-import android.Manifest
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
@@ -9,9 +8,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -227,13 +224,14 @@ object PlaylistSync {
     }
 
     /**
-     * Below Android 10 an exported download needs a permission only a window can
-     * ask for, and every track would fail for the want of it.
+     * Whether a background sync may write downloads at all. It used to depend
+     * on a storage permission below Android 10, when a download could land in
+     * the shared Music folder; downloads go to the app's own encrypted
+     * storage now, which needs no permission on any version, so this always
+     * answers yes. Kept as a question because the caller is phrased around
+     * asking it.
      */
-    private fun storageWritable(context: Context): Boolean =
-        !AppSettings.exportDownloads.value || !DownloadStore.needsLegacyPermission() ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-            PackageManager.PERMISSION_GRANTED
+    private fun storageWritable(context: Context): Boolean = true
 
     // ---- Reading a playlist -------------------------------------------------
 

@@ -66,10 +66,15 @@ sealed interface DownloadState {
  *    without a media-store query per row, and the only way it knows *which*
  *    file a track corresponds to when asked to delete it.
  *
- * [saved] is a claim about a folder this app does not own. The user is expected
- * to manage Downloads with a file manager, so an entry here can outlive the
- * file it names — which is why every read of it goes through [savedUri], and
- * why that verifies before it answers.
+ * [saved] is a claim about the encrypted store (see [EncryptedStore]). An
+ * entry can still outlive the file it names — a store wiped from under the
+ * app, a key lost with the app's data — which is why every read of it goes
+ * through [savedUri], and why that verifies before it answers. Records left
+ * by builds from before the store existed name plain files in the shared
+ * Music folder or content uris; those are pruned wherever they are read,
+ * because Downloads is the encrypted saves and only them. The files
+ * themselves are not touched: they are the listener's, sitting in a public
+ * folder, and Local Music lists them with everything else there.
  */
 object Downloads {
 
@@ -338,19 +343,40 @@ object Downloads {
 
     // ---- The record ---------------------------------------------------------
 
+    /** Whether [uriString] names a file in the encrypted store. */
+    private fun isEncryptedSave(uriString: String): Boolean =
+        EncryptedStore.isStorePath(runCatching { uriString.toUri().path }.getOrNull())
+
     /**
      * The file saved for [videoId], or null — pruning the record if the file
-     * has been deleted from under it.
+     * has been deleted from under it, or if the record predates the encrypted
+     * store and names a plain file instead (see the note on [saved]).
      *
      * Touches the filesystem, so call it off the main thread.
      */
     suspend fun savedUri(context: Context, videoId: String): Uri? = withContext(Dispatchers.IO) {
         val recorded = _saved.value[videoId] ?: return@withContext null
+        if (!isEncryptedSave(recorded)) {
+            forget(videoId)
+            return@withContext null
+        }
         val uri = recorded.toUri()
         if (DownloadStore.exists(context, uri)) return@withContext uri
         Log.d(TAG, "$videoId was downloaded but the file is gone; forgetting it")
         forget(videoId)
         null
+    }
+
+    /** The bytes the encrypted saves take up, for the Downloads page to say. */
+    suspend fun savedStorageBytes(): Long = withContext(Dispatchers.IO) {
+        _saved.value.values.distinct().sumOf { recorded ->
+            val uri = recorded.toUri()
+            if (uri.scheme == "file" && isEncryptedSave(recorded)) {
+                uri.path?.let(::File)?.length() ?: 0L
+            } else {
+                0L
+            }
+        }
     }
 
     /**
@@ -395,6 +421,10 @@ object Downloads {
      */
     fun verifiedSavedUri(videoId: String): String? {
         val recorded = _saved.value[videoId] ?: return null
+        if (!isEncryptedSave(recorded)) {
+            forget(videoId)
+            return null
+        }
         if (!isMissingLocalFile(recorded)) return recorded
         Log.d(TAG, "$videoId was downloaded but the file is gone; forgetting it")
         forget(videoId)
@@ -761,6 +791,14 @@ object Downloads {
             // materialise that file once, not once per alias.
             if (!seenUris.add(meta.uri)) continue
             val uri = meta.uri.toUri()
+            if (!isEncryptedSave(meta.uri)) {
+                // A record from before the encrypted store. Its file is a
+                // plain one in the shared Music folder — the listener's to
+                // keep, and Local Music's to list — but Downloads is the
+                // encrypted saves only, so the record goes.
+                metaMap.filterValues { it.uri == meta.uri }.keys.forEach(::forget)
+                continue
+            }
             if (DownloadStore.exists(context, uri)) {
                 val fileModifiedMillis = uri.takeIf { it.scheme == "file" }
                     ?.path
@@ -840,7 +878,7 @@ object Downloads {
                 val uriString = saved[videoId] ?: metadata[videoId]?.uri ?: return@mapNotNull null
                 if (!seenUris.add(uriString)) return@mapNotNull null
                 val uri = uriString.toUri()
-                if (!DownloadStore.exists(context, uri)) {
+                if (!isEncryptedSave(uriString) || !DownloadStore.exists(context, uri)) {
                     // Both a video id and its catalogue replacement can name
                     // this file. Prune every alias now that the one disk check
                     // has established that the shared file is gone.
@@ -1086,75 +1124,41 @@ object Downloads {
         val route = plan.route ?: error("Nothing to download")
 
         var pending: DownloadStore.Pending? = null
-        var lyrics: Deferred<LyricsTag.Embeddable?>? = null
         var artwork: Deferred<MediaTagger.Artwork?>? = null
         try {
             coroutineScope {
-                // Started before the transfer rather than after it, so four lyric
-                // services are being raced while the bytes are already moving. Done
-                // after the commit instead, every download would pay the slowest of
-                // them in dead time — and it is a *suspending* wait, so it would sit
-                // in the one stretch of this function that has no way back: past the
-                // commit, [pending] is null and a cancellation there would abandon a
-                // finished file that nothing has recorded yet. Awaited below while
-                // there is still a pending destination to abort.
-                //
-                // [LyricsTag.forTrack] is contracted not to throw for anything but
-                // cancellation, and that contract is load-bearing here: this is a
-                // plain child of the scope, so a failure inside it would cancel the
-                // download it was only meant to decorate.
-                // HLS has no tag container, but its private offline package has
-                // sidecars for exactly the same lyrics and full-resolution cover.
-                if (route.taggable && (route.offlineHls != null || MediaTagger.carriesTags(route.extension))) {
-                    lyrics = async { LyricsTag.forTrack(track) }
+                // Started before the transfer rather than after it, so the
+                // cover is being fetched while the bytes are already moving.
+                // Only the cover is fetched now: it is kept beside the record
+                // (see [MediaTagger.persistArtwork]) so Downloads can show it
+                // offline. Lyrics and the rest of the tag used to be fetched
+                // here too, to be embedded into the finished file — an
+                // encrypted file has no container to embed into, so that work
+                // and its wait are simply gone.
+                if (route.taggable) {
                     artwork = async { MediaTagger.artworkFor(context, track) }
                 }
 
                 val name = DownloadStore.fileNameFor(track, route.extension)
                 val alreadyThere = DownloadStore.existing(context, name)
                 if (alreadyThere != null) {
-                    Log.d(TAG, "$name is already in Music; adopting it")
+                    Log.d(TAG, "$name is already saved; adopting it")
                     remember(song, track, alreadyThere)
                     DownloadSession.done(id)
                     clear(id)
                     return@coroutineScope
                 }
 
-                val manifest = route.offlineHls
-                if (manifest != null) {
-                    val onSegment: (Long, Long) -> Unit = { written, total ->
-                        val fraction = written.toFloat() / total
-                        _active.update { it + (id to DownloadState.Running(fraction)) }
-                        DownloadSession.running(id, fraction)
-                    }
-                    val savedUri = if (manifest.dash) {
-                        OfflineDash.save(
-                            context = context,
-                            id = id,
-                            url = manifest.url,
-                            headers = manifest.headers,
-                            onProgress = onSegment,
-                            lyrics = lyrics?.await(),
-                            artwork = artwork?.await(),
-                        )
-                    } else {
-                        OfflineHls.save(
-                            context = context,
-                            id = id,
-                            url = manifest.url,
-                            headers = manifest.headers,
-                            onProgress = onSegment,
-                            lyrics = lyrics?.await(),
-                            artwork = artwork?.await(),
-                        )
-                    }
-                    remember(song, track, savedUri, route.downloadFormat)
-                    DownloadSession.done(id)
-                    clear(id)
-                    Log.d(TAG, "saved offline ${if (manifest.dash) "DASH" else "HLS"} package for $name")
-                    return@coroutineScope
-                }
-
+                // Every download goes through this one door: a destination in
+                // the encrypted store, whose stream encrypts on the way in.
+                // There is deliberately no second path beside it — the offline
+                // HLS/DASH package route that used to branch off here wrote its
+                // segments as plain files, and a store that is encrypted except
+                // for the tracks that arrived as manifests is not encrypted.
+                // A manifest that can't be assembled into one file is refused
+                // upstream of here instead (see [keepable]), and falls back to
+                // a route that can.
+                check(route.offlineHls == null) { "Manifest downloads are saved as files, not packages" }
                 val destination = DownloadStore.begin(context, name, route.mimeType)
                 pending = destination
                 destination.openStream().use { sink ->
@@ -1164,11 +1168,7 @@ object Downloads {
                         DownloadSession.running(id, fraction)
                     }
                 }
-                val words = lyrics?.await()
                 val cover = artwork?.await()
-                // Publish only after metadata is part of the file. This keeps
-                // concurrent album workers from exposing untagged tracks.
-                MediaTagger.embed(context, destination.tagUri, track, route.extension, words, cover)
                 val artworkUri = MediaTagger.persistArtwork(context, track.thumbnailUrl, cover)
                 val savedUri = destination.commit()
                 pending = null
@@ -1185,8 +1185,7 @@ object Downloads {
             // path above returns with the lookup still in flight, and
             // [coroutineScope] does not return while a child of it is running —
             // so an unwaited job would hold the whole queue up for the length of
-            // a lyrics search per already-downloaded track.
-            lyrics?.cancel()
+            // a cover fetch per already-downloaded track.
             artwork?.cancel()
         }
     }
@@ -1197,7 +1196,7 @@ object Downloads {
      *
      * Exists so [run] has one linear body rather than two nearly-identical
      * ones. Everything after the bytes are chosen — the duplicate check, the
-     * pending row, the commit, the tagging, the abort on failure — is the same
+     * pending row, the commit, the abort on failure — is the same
      * work whichever server the audio came from, and the two routes differ only
      * in these four answers.
      */
@@ -1257,10 +1256,11 @@ object Downloads {
             val name = SourceRegistry.config(row.first)?.displayName ?: "its source"
             error("Couldn't download this song from $name — check that it's still connected")
         }
-        // MediaStore.Audio refuses audio/webm on affected Android versions.
-        // Keep Opus for app-private downloads, but pin exported downloads to
-        // AAC-in-MP4 for both the initial resolve and any mid-transfer retry.
-        val requireM4a = AppSettings.exportDownloads.value
+        // MediaStore.Audio refuses audio/webm on affected Android versions,
+        // which used to pin exported downloads to AAC-in-MP4. Downloads are
+        // encrypted private files now and never meet the media store, so Opus
+        // is kept as it comes, here and on any mid-transfer retry.
+        val requireM4a = false
         val stream = StreamResolver.resolveForDownload(track.videoId, quality.maxKbps, requireM4a)
         return Route(
             extension = stream.downloadExtension,
@@ -1302,11 +1302,10 @@ object Downloads {
                     ?.takeIf { it.extension in ManifestFile.EXTENSIONS }
                 when {
                     // A manifest's segments are joined back into one ordinary
-                    // file — see [ManifestFile] — exported or not, so a lossless
-                    // download is a `.flac` wherever it lands. Exports used to
-                    // decline manifests instead, which meant YouTube: Tidal
-                    // serves every lossless tier as a manifest, so an exporting
-                    // user heard FLAC and saved 131kbps AAC.
+                    // file — see [ManifestFile] — so a lossless download is a
+                    // `.flac` wherever it lands. Tidal serves every lossless
+                    // tier as a manifest, so declining manifests here would
+                    // mean hearing FLAC and saving 131kbps AAC from YouTube.
                     assembled != null -> Route(
                         extension = assembled.extension,
                         mimeType = assembled.mimeType,
@@ -1320,24 +1319,14 @@ object Downloads {
                         },
                     )
                     // Only a codec the assembler can't file gets this far, and
-                    // [keepable] has already kept it out of an export.
-                    AppSettings.exportDownloads.value -> {
-                        Log.d(TAG, "can't export a ${stream.format.summary} manifest for ${track.videoId}")
+                    // [keepable] has already kept it out. What it used to do —
+                    // land as an offline HLS package of plain segment files —
+                    // is the one shape an encrypted store cannot take, so the
+                    // download falls back to a route that arrives as a file.
+                    else -> {
+                        Log.d(TAG, "can't file a ${stream.format.summary} manifest for ${track.videoId}")
                         null
                     }
-                    // DASH is saved *as* HLS — see [OfflineDash] for why — so
-                    // both kinds land as the same package and are named for
-                    // what was written rather than for what was fetched.
-                    else -> Route(
-                        extension = "m3u8",
-                        mimeType = "application/vnd.apple.mpegurl",
-                        describe = stream.format.summary,
-                        downloadFormat = stream.format.downloadBadge(),
-                        offlineHls = Manifest(stream.url, stream.headers, dash = dash),
-                        write = { sink, onProgress ->
-                            Downloader.fetchDirect(stream.url, stream.headers, sink, onProgress)
-                        },
-                    )
                 }
             }
         }
@@ -1345,12 +1334,11 @@ object Downloads {
 
     /**
      * A route that copies [copy] out of the song cache instead of fetching
-     * anything, or null when it cannot be filed where downloads go: exported
-     * downloads are pinned away from WebM for the same MediaStore reason
-     * [routeFor] gives.
+     * anything. Every container the cache holds can be filed where downloads
+     * go now — the WebM refusal that used to gate this was the media store's,
+     * and downloads never meet it any more (see [routeFor]).
      */
     private fun cachedRoute(copy: AudioCache.CompleteCopy): Route? {
-        if (copy.extension == "webm" && AppSettings.exportDownloads.value) return null
         return Route(
             extension = copy.extension,
             mimeType = copy.mimeType,
@@ -1470,24 +1458,21 @@ object Downloads {
             Log.d(TAG, "${stream.format.summary}: not a file a download can keep; passing")
             return null
         }
-        val export = AppSettings.exportDownloads.value
         return when (probe) {
             is Downloader.Probe.Manifest -> {
                 val assembles = DownloadStore.storable(stream.format.codec)?.extension in ManifestFile.EXTENSIONS
-                if (export && !assembles) {
-                    Log.d(TAG, "${stream.format.summary}: a manifest an export can't file; passing")
+                if (!assembles) {
+                    // A manifest that can't be assembled into one file can't
+                    // be encrypted into one either — its only other shape was
+                    // a package of plain segment files. Passing here lets the
+                    // track fall back to a route that arrives as a file.
+                    Log.d(TAG, "${stream.format.summary}: a manifest that can't be filed; passing")
                     return null
                 }
                 Kept(stream, probe)
             }
             is Downloader.Probe.File -> {
                 val container = probe.container
-                // MediaStore.Audio refuses audio/webm on affected Android
-                // versions — the same reason YouTube's route pins exports to AAC.
-                if (export && container == Downloader.Container.WEBM) {
-                    Log.d(TAG, "${stream.format.summary}: WebM can't be exported; passing")
-                    return null
-                }
                 val described = stream.format.copy(
                     codec = container.codec ?: stream.format.codec ?: container.extension,
                 )
