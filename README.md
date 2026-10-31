@@ -13,13 +13,13 @@
 
 <br/>
 
-[![Latest release](https://img.shields.io/github/v/release/banishwor/BitChord?style=for-the-badge&labelColor=0d1117)](https://github.com/banishwor/BitChord/releases)
-[![License](https://img.shields.io/github/license/banishwor/BitChord?style=for-the-badge&labelColor=0d1117)](https://github.com/banishwor/BitChord/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/banishwor/BitChord/total?style=for-the-badge&labelColor=0d1117)](https://github.com/banishwor/BitChord/releases)
+[![Latest release](https://img.shields.io/github/v/release/banishwor/esei?style=for-the-badge&labelColor=0d1117)](https://github.com/banishwor/esei/releases)
+[![License](https://img.shields.io/github/license/banishwor/esei?style=for-the-badge&labelColor=0d1117)](https://github.com/banishwor/esei/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/banishwor/esei/total?style=for-the-badge&labelColor=0d1117)](https://github.com/banishwor/esei/releases)
 
 <br/>
 
-[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Support**](#support) · [**Disclaimer**](#disclaimer)
+[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Disclaimer**](#disclaimer)
 
 <br/>
 
@@ -90,9 +90,9 @@
 
 <h1><a id="download"></a>Download</h1>
 
-<a href="https://github.com/banishwor/BitChord/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
+<a href="https://github.com/banishwor/esei/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
 
-Grab the latest signed APK from the [Releases](https://github.com/banishwor/BitChord/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
+Grab the latest signed APK from the [Releases](https://github.com/banishwor/esei/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
 
 
 </div>
@@ -112,22 +112,6 @@ We welcome contributions to BitChord! Please review our [Contributing Guide](CON
 <a href="https://github.com/kushagrasinghx/BitChord/graphs/contributors">
   <img src="https://raw.githubusercontent.com/kushagrasinghx/BitChord/contributors/contributors.svg" />
 </a>
-
-</div>
-
----
-
-<div align="center">
-
-<h1><a id="support"></a>Support</h1>
-
-BitChord is free and always will be — if it's earned a spot in your rotation, you can chip in here:
-
-<a href="https://ko-fi.com/kushagrasinghx" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/donate/kofi-singular-alt/cozy.svg" alt="Support me on Ko-fi" height="55"/></a>
-<a href="https://paypal.me/kuxhagrasingh" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/donate/paypal-plural/cozy.svg" alt="Support us on PayPal" height="55"/></a>
-
-<br/>
-<img src="upi_support.jpg" alt="UPI Support" width="250" />
 
 </div>
 

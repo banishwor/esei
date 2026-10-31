@@ -62,9 +62,9 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        // Esei (BitChord fork) transitional package: installs alongside both the
-        // current Esei app (com.banishwor.esei) and official BitChord.
-        applicationId = "com.banishwor.esei.bc"
+        // Esei (BitChord fork) final package: signed with the same key as the
+        // old Esei app, so this installs over and replaces it.
+        applicationId = "com.banishwor.esei"
         // 26 keeps reach wide; real-time blur (RenderEffect) kicks in on API 31+,
         // Haze falls back to a translucent scrim below that.
         minSdk = 26
