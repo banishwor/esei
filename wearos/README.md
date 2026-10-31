@@ -1,6 +1,6 @@
-# BitChord for Wear OS
+# Esei for Wear OS
 
-A watch remote for the BitChord phone app: now playing over the player's mesh
+A watch remote for the Esei phone app: now playing over the player's mesh
 backdrop, play/pause on the cover with a progress ring (hold it to seek), skip,
 Love where the phone offers it, Up Next, shuffle, repeat, the phone's volume on
 the crown or bezel, an always-on player, and an Output picker covering the
@@ -59,7 +59,7 @@ adb connect <watch-ip>:<port>
 adb -s <watch-ip>:<port> install -r wearos/build/outputs/apk/dev/debug/BitChordWear-dev-debug.apk
 ```
 
-The phone needs a BitChord build that includes `WearBridge` (anything from this
+The phone needs an Esei build that includes `WearBridge` (anything from this
 change on), from the same flavor and signed with the same key.
 
 Debug builds are shrunk and non-debuggable, because an un-R8'd, debuggable

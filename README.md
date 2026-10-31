@@ -19,12 +19,10 @@
 
 <br/>
 
-[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Disclaimer**](#disclaimer)
+[**Download**](#download) · [**Screenshots**](#screenshots) · [**Features**](#features) · [**Contributing**](#contributing) · [**Disclaimer**](#disclaimer)
 
 <br/>
 
-<a href="https://fmhy.net/mobile#youtube-music" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/available/fmhy/cozy.svg" alt="Featured on FMHY" height="55"/></a>
-<a href="https://trendshift.io/repositories/177639?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-177639" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/177639" alt="kushagrasinghx%2FBitChord | Trendshift" width="250" height="55"/></a>
 
 </div>
 
@@ -35,7 +33,22 @@
 
 <div align="center">
 
-<img src="Banner.png" alt="BitChord banner" width="100%" />
+<h1><a id="screenshots"></a>Screenshots</h1>
+
+<table>
+  <tr>
+    <td width="25%" align="center"><img src="docs/screenshots/home.jpg" alt="Esei — Home feed" width="100%" /><br/><sub>Home</sub></td>
+    <td width="25%" align="center"><img src="docs/screenshots/search.jpg" alt="Esei — Search with recent searches" width="100%" /><br/><sub>Search</sub></td>
+    <td width="25%" align="center"><img src="docs/screenshots/lyrics.jpg" alt="Esei — Word-synced lyrics on Now Playing" width="100%" /><br/><sub>Lyrics</sub></td>
+    <td width="25%" align="center"><img src="docs/screenshots/downloads.jpg" alt="Esei — Downloads, encrypted saved songs" width="100%" /><br/><sub>Downloads</sub></td>
+  </tr>
+  <tr>
+    <td width="25%" align="center"><img src="docs/screenshots/downloads-autosave.jpg" alt="Esei — Auto-save progress inside Downloads" width="100%" /><br/><sub>Auto-save in Downloads</sub></td>
+    <td width="25%" align="center"><img src="docs/screenshots/settings-storage.jpg" alt="Esei — Storage cap choices in Settings" width="100%" /><br/><sub>Storage cap (Settings)</sub></td>
+    <td width="25%" align="center"><img src="docs/screenshots/offline-home.jpg" alt="Esei — Offline Home showing downloaded songs" width="100%" /><br/><sub>Offline Home</sub></td>
+    <td width="25%"></td>
+  </tr>
+</table>
 
 <h1><a id="features"></a>Features</h1>
 
@@ -48,7 +61,9 @@
 - **Hi-Res lossless audio** — FLAC/ALAC from a configured module source, with YouTube Music as fallback.
 - **Gapless playback with true crossfade**, adjustable 0–12s.
 - **Automix [Beta]** — DJ-style transitions with beat-matching and tempo-stretching.
-- **Offline downloads** — save tracks with embedded metadata.
+- **Encrypted offline downloads** — saved tracks are encrypted and play only inside Esei (no plain files other apps can open). Download with the usual button, or let a song save itself: after you've really listened to half of it, it is saved automatically, with the progress shown inside Downloads. Downloads work on Wi-Fi and mobile data.
+- **A storage cap you choose** — pick 1, 2, 3, 4 or 5 GB for downloads in Settings. When the cap fills, your least-listened saves are removed first; Liked songs, saves under 7 days old, and the track currently playing are always protected.
+- **Offline launch** — open Esei with no connection and it goes straight to your downloaded songs.
 - **Local music library** integration.
 - **Background playback** via a proper foreground media session.
 - **Apple-like lyrics animation** — credit to [binimum](https://github.com/binimum/am-lyrics).
@@ -92,7 +107,7 @@
 
 <a href="https://github.com/banishwor/esei/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
 
-Grab the latest signed APK from the [Releases](https://github.com/banishwor/esei/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
+Grab the latest signed APK from the [Releases](https://github.com/banishwor/esei/releases) page — the current release is [v1.9-switch](https://github.com/banishwor/esei/releases/download/v1.9-switch/Esei-Final-arm64-v8a.apk) (`Esei-Final-arm64-v8a.apk`). The app checks this repo's releases for updates. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
 
 
 </div>
@@ -103,14 +118,14 @@ Grab the latest signed APK from the [Releases](https://github.com/banishwor/esei
 
 <h1><a id="contributing"></a>Contributing</h1>
 
-We welcome contributions to BitChord! Please review our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a Pull Request.
+We welcome contributions to Esei! Please review our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a Pull Request.
 
 [**Contributing Guide**](CONTRIBUTING.md) · [**Code of Conduct**](CODE_OF_CONDUCT.md) · [**Maintainers**](MAINTAINERS.md) · [**Additional Docs**](ADDITIONAL.md)
 
 ### Thanks to all contributors ❤
 
-<a href="https://github.com/kushagrasinghx/BitChord/graphs/contributors">
-  <img src="https://raw.githubusercontent.com/kushagrasinghx/BitChord/contributors/contributors.svg" />
+<a href="https://github.com/banishwor/esei/graphs/contributors">
+  <img src="https://raw.githubusercontent.com/banishwor/esei/contributors/contributors.svg" />
 </a>
 
 </div>
@@ -121,12 +136,12 @@ We welcome contributions to BitChord! Please review our [Contributing Guide](CON
 
 <h1><a id="disclaimer"></a>Disclaimer & Legal Notice</h1>
 
-BitChord is an independent, community-driven third-party audio player and client. It is **not** associated with Google LLC, YouTube Music, Deezer, Telegram, or any of their parent companies.
+Esei is an independent, community-driven third-party audio player and client. It is **not** associated with Google LLC, YouTube Music, Deezer, Telegram, or any of their parent companies.
 
-* **No Media Hosting:** BitChord does not host, upload, or store copyrighted music files. It operates strictly as an interface to scan local device storage or stream media directly from public, public-facing, or user-authenticated APIs.
+* **No Media Hosting:** Esei does not host, upload, or store copyrighted music files. It operates strictly as an interface to scan local device storage or stream media directly from public, public-facing, or user-authenticated APIs.
 * **Fair Use & API Usage:** This software is created solely for personal research, educational, and fair-use purposes. The user is entirely responsible for ensuring their usage aligns with their local copyright laws and YouTube Terms of Service.
-* **No Ad-Blocking Guarantee:** While BitChord focuses on providing a clean listening environment, it does not guarantee permanent bypasses or modifications to commercial third-party platform conditions.
-* **Copyleft:** BitChord is free software under the GPLv3. The license does not let anyone forbid others from selling or redistributing copies, but any distribution must come with the Corresponding Source under the same license.
+* **No Ad-Blocking Guarantee:** While Esei focuses on providing a clean listening environment, it does not guarantee permanent bypasses or modifications to commercial third-party platform conditions.
+* **Copyleft:** Esei is free software under the GPLv3. The license does not let anyone forbid others from selling or redistributing copies, but any distribution must come with the Corresponding Source under the same license.
 
 </div>
 

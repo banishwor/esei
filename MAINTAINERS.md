@@ -1,10 +1,12 @@
 # Maintainers
 
-This document lists the maintainers responsible for BitChord.
+This document lists the maintainers responsible for Esei.
 
 | Maintainer | GitHub | Responsibilities |
 |---|---|---|
-| Kushagra Singh | [@kushagrasinghx](https://github.com/kushagrasinghx) | Project creator, core architecture, release management, and PR reviews |
+| Banishwor Athokpam | [@banishwor](https://github.com/banishwor) | Maintainer of this fork: rebrand, fork features (encrypted downloads, auto-save, storage cap), release management, and PR reviews |
+
+Esei is a fork of [BitChord](https://github.com/kushagrasinghx/BitChord), created by Kushagra Singh ([@kushagrasinghx](https://github.com/kushagrasinghx)). Credit for the original app goes to him and the contributors listed below.
 
 ## Responsibilities
 
@@ -12,7 +14,7 @@ Maintainers oversee project direction, repository maintenance, review and mergin
 
 ## Contributors
 
-This list is automatically generated from GitHub repository contributor data.
+This list is automatically generated from this repository's contributor data, so it includes the original BitChord contributors whose work this fork builds on.
 
 <!-- BEGIN CONTRIBUTORS -->
 - [@kushagrasinghx](https://github.com/kushagrasinghx)
