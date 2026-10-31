@@ -380,6 +380,27 @@ object Downloads {
     }
 
     /**
+     * When each encrypted save landed, epoch seconds by videoId — for
+     * [StorageCap]'s week of grace.
+     *
+     * The record's own date where it has one, the file's last-modified where
+     * it doesn't, resolved the same way [getDownloadedSongs] resolves them —
+     * the two readers should never disagree about how old a save is. A save
+     * neither source can date is left out rather than guessed at, and the
+     * cap treats an undated save as one it may not remove.
+     */
+    internal fun savedAddedSeconds(): Map<String, Long> {
+        val meta = _savedMetadata.value
+        return _saved.value.mapNotNull { (id, recorded) ->
+            if (!isEncryptedSave(recorded)) return@mapNotNull null
+            val fileModifiedMillis = recorded.toUri().path
+                ?.let(::File)?.lastModified()?.takeIf { it > 0 }
+            val (added, _) = resolvedDownloadDates(meta[id]?.dateAddedSeconds, fileModifiedMillis)
+            added?.let { id to it }
+        }.toMap()
+    }
+
+    /**
      * True when [uriString] names a `file://` path that is not there.
      *
      * Deliberately answers only for `file://`, and deliberately cheaply: this is
@@ -1000,6 +1021,18 @@ object Downloads {
             // the notification and with the Downloads page afterwards.
             DownloadSession.retitle(id, plan.track)
             transfer(context, song, plan)
+            // The save that just landed counts towards the storage cap like
+            // the rest of Downloads, so the cap is checked while the landing
+            // is the news — see [StorageCap]. A failure to check is not a
+            // failure to download: the save is good either way, and the next
+            // landing, or the next launch, checks again.
+            try {
+                StorageCap.enforce(context)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "storage cap check failed: ${e.message}")
+            }
         } catch (e: CancellationException) {
             clear(id)
             throw e

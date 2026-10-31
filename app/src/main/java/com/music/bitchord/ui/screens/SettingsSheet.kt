@@ -275,6 +275,7 @@ fun SettingsScreen(
     val cacheLimitBytes by AppSettings.audioCacheLimitBytes.collectAsStateWithLifecycle()
     val showCacheFolder by AppSettings.showCacheFolder.collectAsStateWithLifecycle()
     val downloadQuality by AppSettings.downloadQuality.collectAsStateWithLifecycle()
+    val downloadStorageCapGb by AppSettings.downloadStorageCapGb.collectAsStateWithLifecycle()
     val syncDownloadedPlaylists by AppSettings.syncDownloadedPlaylists.collectAsStateWithLifecycle()
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
@@ -592,6 +593,16 @@ fun SettingsScreen(
                     subtitle = stringResource(R.string.download_quality_subtitle, downloadQuality.perTrack),
                     value = downloadQuality.localizedLabel(),
                     onClick = { onOpenChoice(SettingsChoiceKind.DOWNLOAD_QUALITY) },
+                )
+            }
+            val storageCapTitle = stringResource(R.string.max_storage_for_downloads)
+            row(storageCapTitle, "storage", "cap", "gb", "size", "limit") {
+                SettingsRow(
+                    icon = SfIcons.Storage,
+                    title = storageCapTitle,
+                    subtitle = stringResource(R.string.max_storage_for_downloads_subtitle),
+                    value = stringResource(R.string.storage_gb, downloadStorageCapGb),
+                    onClick = { onOpenChoice(SettingsChoiceKind.DOWNLOAD_STORAGE_CAP) },
                 )
             }
             // There is no "Wi-Fi only" row here any more: Esei downloads on
@@ -2665,6 +2676,7 @@ enum class SettingsChoiceKind(@param:StringRes val title: Int) {
     AUDIO_QUALITY_WIFI(R.string.on_wifi),
     AUDIO_QUALITY_CELLULAR(R.string.on_mobile_data),
     DOWNLOAD_QUALITY(R.string.download_quality),
+    DOWNLOAD_STORAGE_CAP(R.string.max_storage_for_downloads),
     AUTOMIX_PERFORMANCE(R.string.automix_performance),
     BIT_PERFECT(R.string.bit_perfect_output),
     FONT(R.string.font),
@@ -2744,6 +2756,21 @@ fun SettingsChoicePage(
                     footer = stringResource(R.string.download_quality_dialog_subtitle),
                 ) { quality ->
                     AppSettings.setDownloadQuality(quality)
+                    onChosen()
+                }
+            }
+
+            // A size, not a rendition: the rungs are the listener's to pick
+            // and StorageCap does the rest — see AppSettings.downloadStorageCapGb.
+            SettingsChoiceKind.DOWNLOAD_STORAGE_CAP -> {
+                val selected by AppSettings.downloadStorageCapGb.collectAsStateWithLifecycle()
+                ChoiceGroup(
+                    options = AppSettings.DOWNLOAD_STORAGE_CAP_GB_OPTIONS,
+                    selected = selected,
+                    label = { stringResource(R.string.storage_gb, it) },
+                    footer = stringResource(R.string.download_storage_cap_dialog_subtitle),
+                ) { gb ->
+                    AppSettings.setDownloadStorageCapGb(gb)
                     onChosen()
                 }
             }

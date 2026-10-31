@@ -42,6 +42,7 @@ import com.music.bitchord.data.stats.ArtistFacts
 import com.music.bitchord.data.stats.ListeningStats
 import com.music.bitchord.download.Downloads
 import com.music.bitchord.download.PlaylistSync
+import com.music.bitchord.download.StorageCap
 import androidx.work.Configuration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -167,6 +168,12 @@ class BitChordApplication : Application(), SingletonImageLoader.Factory, Configu
         // PlaybackService because the Replay page reads it from the UI side and
         // both live in this process — one owner, one directory.
         ListeningStats.init(this)
+        // Downloads held to the cap the listener set, once per launch as well
+        // as after each landing (see Downloads.run): a library can be over
+        // the line before anything new arrives, because the cap was lowered
+        // or an older build left more behind than it allows. Off the main
+        // thread and after both records it reads are open.
+        CoroutineScope(Dispatchers.IO).launch { runCatching { StorageCap.enforce(this@BitChordApplication) } }
         // After AppSettings, whose switch decides whether half of it runs.
         ArtistFacts.init(this)
         // One cache directory can only be opened once per process, and

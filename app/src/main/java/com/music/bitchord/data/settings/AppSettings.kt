@@ -218,6 +218,28 @@ object AppSettings {
      */
     val downloadQuality = MutableStateFlow(DownloadQuality.LOSSLESS)
 
+    /** The caps the Settings page offers for [downloadStorageCapGb], smallest first. */
+    val DOWNLOAD_STORAGE_CAP_GB_OPTIONS: List<Int> = listOf(1, 2, 3, 4, 5)
+
+    /** The cap in force until the listener chooses one. */
+    const val DEFAULT_DOWNLOAD_STORAGE_CAP_GB = 3
+
+    /**
+     * How much of the device downloads may take up, in gigabytes, chosen by
+     * the listener.
+     *
+     * A ceiling on the whole of Downloads rather than on any one file: when
+     * the encrypted saves pass it, the ones listened to least are removed
+     * until it holds again — see
+     * [com.music.bitchord.download.StorageCap] for the order and for the
+     * saves that are never removed (liked, under a week old, playing, still
+     * fetching). Enforced after each download lands and again at launch,
+     * rather than the moment this changes: a smaller cap picked in Settings
+     * bites on the next of those, which is also when anything could have
+     * grown into it.
+     */
+    val downloadStorageCapGb = MutableStateFlow(DEFAULT_DOWNLOAD_STORAGE_CAP_GB)
+
     /**
      * Refuse to start a download while the connection charges for data.
      *
@@ -910,6 +932,10 @@ object AppSettings {
         ).coerceIn(MIN_UPGRADE_LENGTH_SLACK_SECONDS, MAX_UPGRADE_LENGTH_SLACK_SECONDS)
         migrateDownloadQuality()
         downloadQuality.value = readDownloadQuality()
+        downloadStorageCapGb.value = prefs.getInt(
+            KEY_DOWNLOAD_STORAGE_CAP_GB,
+            DEFAULT_DOWNLOAD_STORAGE_CAP_GB,
+        ).takeIf { it in DOWNLOAD_STORAGE_CAP_GB_OPTIONS } ?: DEFAULT_DOWNLOAD_STORAGE_CAP_GB
         // Not read back: a stored `true` from the upstream build would refuse
         // downloads on mobile data with no Settings row left to lift it.
         wifiOnlyDownloads.value = false
@@ -1206,6 +1232,13 @@ object AppSettings {
     fun setDownloadQuality(value: DownloadQuality) {
         downloadQuality.value = value
         prefs.edit().putString(KEY_QUALITY_DOWNLOAD, value.name).apply()
+    }
+
+    fun setDownloadStorageCapGb(value: Int) {
+        val cap = value.takeIf { it in DOWNLOAD_STORAGE_CAP_GB_OPTIONS }
+            ?: DEFAULT_DOWNLOAD_STORAGE_CAP_GB
+        downloadStorageCapGb.value = cap
+        prefs.edit().putInt(KEY_DOWNLOAD_STORAGE_CAP_GB, cap).apply()
     }
 
     fun setWifiOnlyDownloads(value: Boolean) {
@@ -2122,6 +2155,7 @@ object AppSettings {
     private const val KEY_QUALITY_CELLULAR = "audio_quality_cellular"
     private const val KEY_UPGRADE_LENGTH_SLACK_SECONDS = "upgrade_length_slack_seconds"
     private const val KEY_QUALITY_DOWNLOAD = "audio_quality_download"
+    private const val KEY_DOWNLOAD_STORAGE_CAP_GB = "download_storage_cap_gb"
     private const val KEY_WIFI_ONLY_DOWNLOADS = "wifi_only_downloads"
     // There is deliberately no export_downloads key any more: downloads are
     // encrypted in the app's own storage (see EncryptedStore) and there is no

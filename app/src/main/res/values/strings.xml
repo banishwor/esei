@@ -198,6 +198,10 @@
     <string name="widget_pill_description">The track with Like, Shuffle and playback controls, in a single row.</string>
     <string name="widget_preview_pill">Song title - Artist</string>
     <string name="download_quality">Download quality</string>
+    <string name="max_storage_for_downloads">Max storage for downloads</string>
+    <string name="max_storage_for_downloads_subtitle">Past this, the least-listened saves are removed</string>
+    <string name="download_storage_cap_dialog_subtitle">Liked songs, saves under a week old and the song playing are never removed</string>
+    <string name="storage_gb">%1$d GB</string>
     <string name="download_wifi_only">Download over Wi-Fi only</string>
     <string name="convert_to_audio">Convert to audio</string>
     <string name="convert_to_video">Convert to video</string>
