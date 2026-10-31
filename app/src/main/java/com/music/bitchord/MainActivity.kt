@@ -344,6 +344,7 @@ import com.music.bitchord.data.toGroup
 import com.music.bitchord.data.settings.LibraryViewType
 import com.music.bitchord.data.settings.LocalMusicSort
 import com.music.bitchord.ui.screens.HomeScreen
+import com.music.bitchord.ui.screens.OfflineHomeScreen
 import com.music.bitchord.ui.screens.LibraryGridPage
 import com.music.bitchord.ui.screens.LibraryScreen
 import com.music.bitchord.ui.screens.MoodGenrePlaylistsScreen
@@ -827,6 +828,9 @@ private fun BitChordApp(
     )
 
     val homeState by viewModel.home.collectAsStateWithLifecycle()
+    // No connection swaps Home's feed for the downloaded songs (OfflineHomeScreen).
+    val hasNetwork by AppSettings.hasNetwork.collectAsStateWithLifecycle()
+    val downloadsLabel = stringResource(R.string.downloads)
     val homeLoadingMore by viewModel.homeLoadingMore.collectAsStateWithLifecycle()
     val homeRecentlyPlayedLoading by viewModel.homeRecentlyPlayedLoading.collectAsStateWithLifecycle()
     val topPicks by viewModel.topPicks.collectAsStateWithLifecycle()
@@ -3340,7 +3344,21 @@ private fun BitChordApp(
                                 },
                             )
                         } else when ((destination as? AppDestination.Tab)?.index ?: selectedTab) {
-                            TAB_HOME -> HomeScreen(
+                            TAB_HOME -> if (!hasNetwork) {
+                                OfflineHomeScreen(
+                                    listState = homeListState,
+                                    currentSong = player.song,
+                                    isPlaying = player.isPlaying,
+                                    contentPadding = listPadding,
+                                    onSongClick = { songs, index ->
+                                        playFrom(
+                                            songs,
+                                            index,
+                                            QueueSource(downloadsLabel, PlaybackSourceType.BROWSE),
+                                        )
+                                    },
+                                )
+                            } else HomeScreen(
                                 state = homeState,
                                 listState = homeListState,
                                 currentSong = player.song,

@@ -268,6 +268,13 @@ object AppSettings {
     /** Whether the active network charges for data. `null` while offline. */
     val meteredConnection = MutableStateFlow<Boolean?>(null)
 
+    /**
+     * Whether the device currently has a network that claims internet access.
+     * Starts optimistic; [watchConnection] keeps it current. Home reads it to
+     * swap its feed for the downloaded songs when there is no connection.
+     */
+    val hasNetwork = MutableStateFlow(true)
+
     // `losslessAudio` used to live here, behind a "Prefer lossless" switch on
     // the Sources screen. It is gone: sources are asked for their best and each
     // degrades on its own terms, so the switch's only real effect was to ask a
@@ -1179,6 +1186,12 @@ object AppSettings {
             meteredConnection.value = runCatching {
                 if (manager.activeNetwork == null) null else manager.isActiveNetworkMetered
             }.getOrNull()
+            runCatching {
+                val network = manager.activeNetwork
+                hasNetwork.value = network != null &&
+                    manager.getNetworkCapabilities(network)
+                        ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            }
         }
         refresh()
         runCatching {
