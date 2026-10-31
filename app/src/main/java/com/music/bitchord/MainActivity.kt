@@ -223,11 +223,13 @@ import com.music.bitchord.playback.upgradeQuality
 import com.music.bitchord.playback.revertToOriginal
 import com.music.bitchord.playback.swapToVersion
 import com.music.bitchord.playback.smart.VersionAudioAligner
+import com.music.bitchord.download.AutoSave
 import com.music.bitchord.download.DownloadSession
 import com.music.bitchord.download.DownloadStore
 import com.music.bitchord.download.MediaTagger
 import com.music.bitchord.download.DownloadTarget
 import com.music.bitchord.download.Downloads
+import com.music.bitchord.download.DownloadState
 import com.music.bitchord.ui.components.BrowseActionsMenu
 import com.music.bitchord.ui.components.BrowseTarget
 import com.music.bitchord.ui.components.ConfirmationAlert
@@ -328,6 +330,7 @@ import com.music.bitchord.ui.player.PlayerDock
 import com.music.bitchord.ui.screens.DetailScreen
 import com.music.bitchord.ui.screens.sortedForDetail
 import com.music.bitchord.ui.screens.ExploreScreen
+import com.music.bitchord.ui.screens.AutoSaveEntry
 import com.music.bitchord.ui.screens.LocalFolder
 import com.music.bitchord.ui.screens.LocalFolderState
 import com.music.bitchord.ui.screens.LocalFolderTab
@@ -3096,12 +3099,39 @@ private fun BitChordApp(
                                 } else {
                                     null
                                 }
+                                // Downloads only: the playing track's row on its
+                                // way to the 50% auto-save, from AutoSave's own
+                                // accounting. Gone the moment the save is asked
+                                // for: from then on the track is an ordinary
+                                // download, and then an ordinary saved row.
+                                val autoSaveProgress by AutoSave.progress.collectAsStateWithLifecycle()
+                                val activeDownloads by Downloads.active.collectAsStateWithLifecycle()
+                                val autoSaveEntry = if (isDownloads) {
+                                    val p = autoSaveProgress
+                                    val downloadState = p?.let { activeDownloads[it.song.videoId] }
+                                    if (p != null && p.durationMs > 0 && p.song.localUri == null &&
+                                        p.song.videoId !in savedDownloads &&
+                                        downloadState !is DownloadState.Queued &&
+                                        downloadState !is DownloadState.Running
+                                    ) {
+                                        AutoSaveEntry(
+                                            song = p.song,
+                                            percent = (p.heardMs * 200 / p.durationMs).toInt()
+                                                .coerceIn(0, 100),
+                                        )
+                                    } else {
+                                        null
+                                    }
+                                } else {
+                                    null
+                                }
                                 LocalFolder(
                                     state = localFolderStates.getOrPut(page.browseId) { LocalFolderState() },
                                     sort = folderSortOf(page.browseId),
                                     viewType = folderViewTypeOf(page.browseId),
                                     collections = downloadCollections,
                                     footerNote = downloadsFooterNote,
+                                    autoSaveEntry = autoSaveEntry,
                                     selectable = isDownloads || isCache,
                                     onOpenGroup = viewModel::openLocalGroup,
                                     onGroupLongPress = { group ->

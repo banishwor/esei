@@ -42,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -145,6 +146,14 @@ class LocalFolder(
      * every other folder's files can speak for themselves.
      */
     val footerNote: String? = null,
+    /**
+     * Downloads only: the playing track on its way to the 50% auto-save,
+     * drawn as one row at the head of the Songs tab — see
+     * [com.music.bitchord.download.AutoSave]. Null hides it; every other
+     * folder gets none, and Downloads gets none whenever nothing countable
+     * is playing.
+     */
+    val autoSaveEntry: AutoSaveEntry? = null,
     /** Which ways of looking at the tracks this folder offers, in order. */
     val tabs: List<LocalFolderTab> = LocalFolderTab.BASIC,
     /**
@@ -155,6 +164,12 @@ class LocalFolder(
     /** Puts "New playlist" at the head of the Playlists tab. */
     val onCreatePlaylist: (() -> Unit)? = null,
 )
+
+/**
+ * The one auto-save row's contents: the playing track, and how far its real
+ * listening has carried it as a percentage of the half it has to reach.
+ */
+data class AutoSaveEntry(val song: Song, val percent: Int)
 
 enum class LocalFolderTab {
     SONGS,
@@ -299,7 +314,7 @@ internal fun LazyListScope.localFolderItems(
 
     val grid = folder.viewType == LibraryViewType.GRID
     val empty = when (state.tab) {
-        LocalFolderTab.SONGS -> songs.isEmpty()
+        LocalFolderTab.SONGS -> songs.isEmpty() && folder.autoSaveEntry == null
         else -> groups.isEmpty()
     }
     if (empty) {
@@ -336,7 +351,16 @@ internal fun LazyListScope.localFolderItems(
 
     val isCurrentRow = playingRowMatcher(songs, currentSong)
     when (state.tab) {
-        LocalFolderTab.SONGS -> if (grid) {
+        LocalFolderTab.SONGS -> {
+            // The playing track's road to its auto-save, ahead of everything
+            // saved: one row, and only ever the current song's.
+            folder.autoSaveEntry?.let { entry ->
+                item(key = "folder-autosave") {
+                    AutoSaveRow(entry, palette)
+                    FolderDivider(palette)
+                }
+            }
+            if (grid) {
             gridRows(songs.indices.toList(), columns, key = { "song-${songs[it].videoId}-$it" }) { index ->
                 val song = songs[index]
                 SongGridCard(
@@ -372,6 +396,7 @@ internal fun LazyListScope.localFolderItems(
                 )
                 if (index < songs.lastIndex) FolderDivider(palette)
             }
+        }
         }
 
         LocalFolderTab.ARTISTS -> if (grid) {
@@ -912,6 +937,74 @@ internal fun LocalFolderSelectionBar(
             )
         }
         TextButton(onClick = state::clear) { Text(stringResource(R.string.cancel)) }
+    }
+}
+
+/**
+ * The Downloads page's one auto-save row: the track playing now, and how far
+ * its real listening has carried it toward the halfway save — a hairline bar
+ * and a percentage under its name. It is neither a saved row nor a download
+ * row: the moment the save is asked for, the track leaves this row and is an
+ * ordinary download instead, and then an ordinary saved row.
+ */
+@Composable
+private fun AutoSaveRow(entry: AutoSaveEntry, palette: ArtworkPalette) {
+    val song = entry.song
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PAGE_GUTTER, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(palette.accent.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            CoverPlaceholder(Icons.Rounded.MusicNote, Modifier.fillMaxSize())
+            if (song.thumbnailUrl != null) {
+                AsyncImage(
+                    model = song.thumbnailUrl.artworkAt(CARD_ART_PX),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = song.title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = palette.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = song.artist.ifBlank { stringResource(R.string.unknown_artist) },
+                style = MaterialTheme.typography.bodyMedium,
+                color = palette.onBackgroundVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { entry.percent / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp),
+                color = palette.accent,
+                trackColor = palette.accent.copy(alpha = 0.18f),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.autosave_progress, entry.percent),
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.onBackgroundVariant,
+            )
+        }
     }
 }
 

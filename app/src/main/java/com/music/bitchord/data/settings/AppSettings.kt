@@ -226,14 +226,15 @@ object AppSettings {
      * tethered hotspot is Wi-Fi that costs money, and an unmetered home
      * connection is worth using whether or not it arrives over Wi-Fi.
      *
-     * On by default, and that is a deliberate change of behaviour for anyone
-     * updating. [downloadQuality] defaulting to Lossless means a tap that used
-     * to spend four megabytes of mobile data can now spend thirty-five, and of
-     * the two ways to get that wrong — silently overspending a data plan, or
-     * refusing with a sentence naming the switch that would allow it — only the
-     * second is recoverable by the person it happens to.
+     * Upstream had this on by default, to protect a data plan from
+     * [downloadQuality] defaulting to Lossless. Esei retires it: downloads —
+     * tapped for, playlist syncs and the 50% auto-save alike — run on Wi-Fi
+     * and mobile data, always. The flow and its stored key are kept so the
+     * plumbing that consults it (and upstream merges) still works, but
+     * nothing sets it any more: [readAll] pins it off and Settings offers
+     * no row for it.
      */
-    val wifiOnlyDownloads = MutableStateFlow(true)
+    val wifiOnlyDownloads = MutableStateFlow(false)
 
     /**
      * Check the playlists downloaded whole for newly added songs and download
@@ -909,7 +910,9 @@ object AppSettings {
         ).coerceIn(MIN_UPGRADE_LENGTH_SLACK_SECONDS, MAX_UPGRADE_LENGTH_SLACK_SECONDS)
         migrateDownloadQuality()
         downloadQuality.value = readDownloadQuality()
-        wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY_DOWNLOADS, true)
+        // Not read back: a stored `true` from the upstream build would refuse
+        // downloads on mobile data with no Settings row left to lift it.
+        wifiOnlyDownloads.value = false
         syncDownloadedPlaylists.value = prefs.getBoolean(KEY_SYNC_DOWNLOADED_PLAYLISTS, false)
         crossfadeSeconds.value = prefs.getInt(KEY_CROSSFADE, 0)
         smartFadeEnabled.value = prefs.getBoolean(KEY_SMART_FADE, false)

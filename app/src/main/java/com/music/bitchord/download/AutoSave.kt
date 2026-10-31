@@ -6,6 +6,9 @@ import com.music.bitchord.data.DebugLog as Log
 import com.music.bitchord.data.model.Song
 import com.music.bitchord.data.model.durationMillis
 import com.music.bitchord.data.settings.AppSettings
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -33,13 +36,11 @@ import kotlin.math.min
  * second list of what it has saved; [Downloads] is the only record, and a
  * track already there, queued or running is left alone.
  *
- * Two kinds of track are never candidates: one already on the device as the
+ * One kind of track is never a candidate: one already on the device as the
  * listener's own file (it has a `localUri`; saving it again would only copy
- * it), and any track while downloads are not allowed on this connection —
- * the Wi-Fi-only setting is a promise about data, and an automatic download
- * is exactly the kind it was made for. The totals are kept either way, so a
- * track that crossed the line on mobile data is saved at the next listen on
- * a connection that allows it.
+ * it). Downloads run on Wi-Fi and mobile data alike, so a track is saved on
+ * the connection it crossed the line on; the gate consulted in [maybeSave]
+ * stays only as the download queue's own safety net.
  */
 object AutoSave {
 
@@ -58,6 +59,20 @@ object AutoSave {
 
     /** The length each track was last known to be, for the half of it. */
     private val durations = mutableMapOf<String, Long>()
+
+    /** The playing track's road to its save, as the Downloads page draws it. */
+    data class Progress(val song: Song, val heardMs: Long, val durationMs: Long)
+
+    private val _progress = MutableStateFlow<Progress?>(null)
+
+    /**
+     * The currently playing track's banked-plus-this-sitting listening
+     * against its length, published on every sampler tick and cleared when
+     * playback stops. The Downloads page's one auto-save row is drawn from
+     * this and nothing else reads it; it is a view, not a record — [totals]
+     * are the record.
+     */
+    val progress: StateFlow<Progress?> = _progress.asStateFlow()
 
     private var currentId: String? = null
     private var currentSong: Song? = null
@@ -82,6 +97,7 @@ object AutoSave {
             sessionMs = 0L
             lastSampleAt = now
             currentDurationMs = durationMs.takeIf { it > 0 } ?: song.durationMillis()
+            publishProgress()
             return
         }
         val step = (now - lastSampleAt).coerceIn(0L, MAX_STEP_MS)
@@ -89,6 +105,7 @@ object AutoSave {
         if (durationMs > 0) currentDurationMs = durationMs
         if (step <= 0L) return
         sessionMs += step
+        publishProgress()
         maybeSave(context)
     }
 
@@ -99,6 +116,20 @@ object AutoSave {
         currentId = null
         currentSong = null
         sessionMs = 0L
+        _progress.value = null
+    }
+
+    /** What [progress] should say about the track under the sampler now. */
+    private fun publishProgress() {
+        val song = currentSong
+        val id = currentId
+        if (song == null || id == null || song.localUri != null) {
+            _progress.value = null
+            return
+        }
+        val length = currentDurationMs.takeIf { it > 0 } ?: durations[id] ?: 0L
+        val heard = (totals[id] ?: 0L) + if (length > 0) min(sessionMs, length) else sessionMs
+        _progress.value = Progress(song, heard, length)
     }
 
     /**

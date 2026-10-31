@@ -275,7 +275,6 @@ fun SettingsScreen(
     val cacheLimitBytes by AppSettings.audioCacheLimitBytes.collectAsStateWithLifecycle()
     val showCacheFolder by AppSettings.showCacheFolder.collectAsStateWithLifecycle()
     val downloadQuality by AppSettings.downloadQuality.collectAsStateWithLifecycle()
-    val wifiOnlyDownloads by AppSettings.wifiOnlyDownloads.collectAsStateWithLifecycle()
     val syncDownloadedPlaylists by AppSettings.syncDownloadedPlaylists.collectAsStateWithLifecycle()
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
@@ -595,18 +594,10 @@ fun SettingsScreen(
                     onClick = { onOpenChoice(SettingsChoiceKind.DOWNLOAD_QUALITY) },
                 )
             }
-            // Reads as part of Download quality above it, not as a setting
-            // of its own — same treatment as Play animated cover over
-            // cellular gets under Animated cover art.
-            val downloadWifiOnlyTitle = stringResource(R.string.download_wifi_only)
-            row(downloadWifiOnlyTitle, "wi-fi", "cellular", divided = false) {
-                SettingsSubRow(
-                    title = downloadWifiOnlyTitle,
-                    checked = wifiOnlyDownloads,
-                    onCheckedChange = AppSettings::setWifiOnlyDownloads,
-                    badge = stringResource(R.string.blocking).takeIf { wifiOnlyDownloads && metered == true },
-                )
-            }
+            // There is no "Wi-Fi only" row here any more: Esei downloads on
+            // Wi-Fi and mobile data alike (see AppSettings.wifiOnlyDownloads,
+            // which is pinned off), so there is nothing to offer a choice
+            // about.
             // There is no "export compatible downloads" row here any more:
             // downloads are encrypted in the app's own storage and playable
             // only in Esei (see EncryptedStore), so there is nothing to offer
