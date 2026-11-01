@@ -2,7 +2,7 @@
     <string name="app_name">Esei</string>
     <string name="playback_channel_name">Now playing</string>
     <string name="download_channel_name">Downloads</string>
-    <string name="download_channel_description">Songs being saved to your Music folder</string>
+    <string name="download_channel_description">Songs being saved to Downloads</string>
     <string name="download_notification_title">Downloading</string>
     <string name="download_notification_starting">Starting</string>
     <string name="download_notification_queued">%1$s · %2$d more queued</string>
@@ -541,7 +541,7 @@
     <string name="shared_link">Shared link</string>
     <string name="opened_file">Opened file</string>
     <string name="radio_started">%1$s radio started</string>
-    <string name="saved_to_bitchord_folder">Saved to Music/BitChord</string>
+    <string name="saved_to_bitchord_folder">Saved to Downloads</string>
     <string name="nothing_downloading">Nothing downloading</string>
     <string name="nothing_to_explore">Nothing to explore right now</string>
     <string name="no_youtube_music_results">No results from YouTube Music</string>
