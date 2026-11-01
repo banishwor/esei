@@ -356,7 +356,7 @@ fun ReplaySummary.artistRows(limit: Int): List<ReplayRow> =
 fun ReplaySummary.albumRows(limit: Int): List<ReplayRow> =
     albums.take(limit).mapIndexed { index, entry ->
         ReplayRow(
-            key = entry.title + "|" + entry.subtitle.orEmpty(),
+            key = entry.browseId ?: (entry.title + "|" + entry.subtitle.orEmpty()),
             rank = index + 1,
             title = entry.title,
             subtitle = entry.subtitle,
