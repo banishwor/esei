@@ -1,7 +1,6 @@
 <div align="center">
 
-<img src="Banner.png" alt="Esei — Halfway through a song, it's already yours." width="100%" />
-
+<br/>
 <br/>
 
 <img src="Logo.png" alt="Esei app icon" width="200" />
@@ -36,20 +35,7 @@
 
 <h1><a id="screenshots"></a>Screenshots</h1>
 
-<table>
-  <tr>
-    <td width="25%" align="center"><img src="docs/screenshots/home.jpg" alt="Esei — Home feed" width="100%" /><br/><sub>Home</sub></td>
-    <td width="25%" align="center"><img src="docs/screenshots/search.jpg" alt="Esei — Search with recent searches" width="100%" /><br/><sub>Search</sub></td>
-    <td width="25%" align="center"><img src="docs/screenshots/lyrics.jpg" alt="Esei — Word-synced lyrics on Now Playing" width="100%" /><br/><sub>Lyrics</sub></td>
-    <td width="25%" align="center"><img src="docs/screenshots/downloads.jpg" alt="Esei — Downloads, encrypted saved songs" width="100%" /><br/><sub>Downloads</sub></td>
-  </tr>
-  <tr>
-    <td width="25%" align="center"><img src="docs/screenshots/downloads-autosave.jpg" alt="Esei — Auto-save progress inside Downloads" width="100%" /><br/><sub>Auto-save in Downloads</sub></td>
-    <td width="25%" align="center"><img src="docs/screenshots/settings-storage.jpg" alt="Esei — Storage cap choices in Settings" width="100%" /><br/><sub>Storage cap (Settings)</sub></td>
-    <td width="25%" align="center"><img src="docs/screenshots/offline-home.jpg" alt="Esei — Offline Home showing downloaded songs" width="100%" /><br/><sub>Offline Home</sub></td>
-    <td width="25%"></td>
-  </tr>
-</table>
+<img src="Banner.png" alt="Esei — Home, word-synced lyrics and encrypted Downloads" width="100%" />
 
 <h1><a id="features"></a>Features</h1>
 
