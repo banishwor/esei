@@ -25,8 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,7 +43,6 @@ fun AccountAndScrobblingScreen(
     onSignOut: () -> Unit,
     onOpenListenBrainzLogin: () -> Unit,
     onOpenLastfmLogin: () -> Unit,
-    onOpenDiscord: () -> Unit,
     onOpenSpotify: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
@@ -62,9 +59,6 @@ fun AccountAndScrobblingScreen(
     val listenBrainzEnabled by AppSettings.listenBrainzEnabled.collectAsStateWithLifecycle()
     val listenBrainzToken by AppSettings.listenBrainzToken.collectAsStateWithLifecycle()
     val listenBrainzPrimaryArtistOnly by AppSettings.listenBrainzPrimaryArtistOnly.collectAsStateWithLifecycle()
-    val discordToken by AppSettings.discordToken.collectAsStateWithLifecycle()
-    val discordUsername by AppSettings.discordUsername.collectAsStateWithLifecycle()
-    val discordRpcEnabled by AppSettings.discordRpcEnabled.collectAsStateWithLifecycle()
     val spotifyConnected by AppSettings.spotifySpdcToken.collectAsStateWithLifecycle()
 
     Column(
@@ -125,22 +119,12 @@ fun AccountAndScrobblingScreen(
             }
         }
 
-        SettingsGroup(
-            header = stringResource(R.string.rich_presence),
-            footer = stringResource(R.string.rich_presence_footer),
-        ) {
-            SettingsRow(
-                icon = ImageVector.vectorResource(R.drawable.ic_discord),
-                title = "Discord",
-                subtitle = when {
-                    discordToken.isEmpty() -> stringResource(R.string.tap_to_connect)
-                    !discordRpcEnabled -> stringResource(R.string.connected_presence_off)
-                    discordUsername.isNotEmpty() -> stringResource(R.string.sharing_as, discordUsername)
-                    else -> stringResource(R.string.sharing_listens)
-                },
-                onClick = onOpenDiscord,
-            )
-        }
+        // ESEI: The Discord Rich Presence entry (upstream's "Rich Presence"
+        // group with a Discord SettingsRow wired to onOpenDiscord) is hidden
+        // by decision of the Esei maintainer — connecting asks the user to
+        // paste a full Discord account token. All Discord code (DiscordScreen,
+        // AppRoute.Discord, DiscordRPC) is kept in the codebase; restore by
+        // re-adding the group here and the onOpenDiscord parameter/wiring.
 
         if (AppSettings.scrobblingAvailable) {
             SettingsGroup(
