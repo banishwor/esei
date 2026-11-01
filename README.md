@@ -1,6 +1,7 @@
 <div align="center">
 
-<br/>
+<img src="Banner.png" alt="Esei — Halfway through a song, it's already yours." width="100%" />
+
 <br/>
 
 <img src="Logo.png" alt="Esei app icon" width="200" />
