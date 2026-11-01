@@ -2,6 +2,7 @@ package com.music.bitchord.download
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.media3.common.C
 import com.music.bitchord.data.DebugLog as Log
 import com.music.bitchord.data.model.Song
 import com.music.bitchord.data.model.durationMillis
@@ -38,9 +39,12 @@ import kotlin.math.min
  *
  * One kind of track is never a candidate: one already on the device as the
  * listener's own file (it has a `localUri`; saving it again would only copy
- * it). Downloads run on Wi-Fi and mobile data alike, so a track is saved on
- * the connection it crossed the line on; the gate consulted in [maybeSave]
- * stays only as the download queue's own safety net.
+ * it). Length rules out a second kind: a track known to run past
+ * [AUTO_SAVE_MAX_DURATION_MS], or with no end at all — a live stream —
+ * never becomes a candidate either, though the listener can still download
+ * it by hand. Downloads run on Wi-Fi and mobile data alike, so a track is
+ * saved on the connection it crossed the line on; the gate consulted in
+ * [maybeSave] stays only as the download queue's own safety net.
  */
 object AutoSave {
 
@@ -77,6 +81,15 @@ object AutoSave {
     private var currentId: String? = null
     private var currentSong: Song? = null
     private var currentDurationMs = 0L
+
+    /**
+     * The player says the playing track has no end — a live stream. Kept
+     * apart from [currentDurationMs] because "no length known yet" (a
+     * figure may still arrive, and the track stays a candidate meanwhile)
+     * and "no length exists" (none ever will) must not be read as the same
+     * thing. Cleared the moment a real length is reported.
+     */
+    private var currentDurationUnbounded = false
     private var sessionMs = 0L
     private var lastSampleAt = 0L
 
@@ -96,13 +109,19 @@ object AutoSave {
             currentSong = song
             sessionMs = 0L
             lastSampleAt = now
+            currentDurationUnbounded = durationMs == C.TIME_UNSET
             currentDurationMs = durationMs.takeIf { it > 0 } ?: song.durationMillis()
             publishProgress()
             return
         }
         val step = (now - lastSampleAt).coerceIn(0L, MAX_STEP_MS)
         lastSampleAt = now
-        if (durationMs > 0) currentDurationMs = durationMs
+        if (durationMs == C.TIME_UNSET) {
+            currentDurationUnbounded = true
+        } else if (durationMs > 0) {
+            currentDurationUnbounded = false
+            currentDurationMs = durationMs
+        }
         if (step <= 0L) return
         sessionMs += step
         publishProgress()
@@ -115,8 +134,24 @@ object AutoSave {
         commitSession()
         currentId = null
         currentSong = null
+        currentDurationUnbounded = false
         sessionMs = 0L
         _progress.value = null
+    }
+
+    /**
+     * Whether the track under the sampler is out of auto-save's reach on
+     * length alone: it has no end, or its best-known length — the player's
+     * figure, the row's stated runtime, a previous sitting's, whichever
+     * [currentDurationMs] and [durations] amount to — runs past
+     * [AUTO_SAVE_MAX_DURATION_MS]. No length known at all is *not*
+     * exclusion: a track isn't refused its save over missing paperwork.
+     */
+    private fun lengthExcluded(): Boolean {
+        if (currentDurationUnbounded) return true
+        val id = currentId ?: return false
+        val length = currentDurationMs.takeIf { it > 0 } ?: durations[id] ?: 0L
+        return length > AUTO_SAVE_MAX_DURATION_MS
     }
 
     /** What [progress] should say about the track under the sampler now. */
@@ -124,6 +159,11 @@ object AutoSave {
         val song = currentSong
         val id = currentId
         if (song == null || id == null || song.localUri != null) {
+            _progress.value = null
+            return
+        }
+        // No road-to-the-save row for a save that will never happen.
+        if (lengthExcluded()) {
             _progress.value = null
             return
         }
@@ -156,6 +196,9 @@ object AutoSave {
         // The listener's own files are already saved in every sense that
         // matters here.
         if (song.localUri != null) return
+        // Too long, or no end at all: never a candidate. The download
+        // button stays theirs to tap for it.
+        if (lengthExcluded()) return
         val length = currentDurationMs.takeIf { it > 0 } ?: durations[id] ?: return
         if (length <= 0) return
         val heard = (totals[id] ?: 0L) + min(sessionMs, length)
@@ -195,4 +238,18 @@ object AutoSave {
 
     /** As [com.music.bitchord.data.stats.ListeningRecorder]'s cap, for the same reason. */
     private const val MAX_STEP_MS = 8_000L
+
+    /**
+     * The longest track auto-save will touch, in milliseconds: fifteen
+     * minutes.
+     *
+     * Past that, a "song" is usually something else wearing a song's
+     * clothes — a whole album uploaded as one video, a concert, a mix —
+     * and half of it is a file of a hundred megabytes or more, spending a
+     * real share of the storage cap on something nobody asked to keep.
+     * This gates only the automatic save; the manual download button is
+     * untouched, and a track whose length is simply unknown stays a
+     * candidate.
+     */
+    private const val AUTO_SAVE_MAX_DURATION_MS = 15 * 60 * 1_000L
 }
