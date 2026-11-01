@@ -121,6 +121,18 @@ We welcome contributions to Esei! Please review our [Contributing Guide](CONTRIB
 
 <div align="center">
 
+<h1>Built on BitChord</h1>
+
+Esei is a fork of [BitChord](https://github.com/kushagrasinghx/BitChord) by [kushagrasinghx](https://github.com/kushagrasinghx). The core app — music playback and streaming, lyrics, and radio — is his work and his contributors'.
+
+**What Esei adds:** encrypted app-only downloads, auto-save once you've listened to half a song, a storage cap you choose (1–5 GB), offline launch straight to your downloads, and the Esei identity.
+
+</div>
+
+---
+
+<div align="center">
+
 <h1><a id="disclaimer"></a>Disclaimer & Legal Notice</h1>
 
 Esei is an independent, community-driven third-party audio player and client. It is **not** associated with Google LLC, YouTube Music, Deezer, Telegram, or any of their parent companies.
