@@ -107,7 +107,7 @@
 
 <a href="https://github.com/banishwor/esei/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
 
-Grab the latest signed APK from the [Releases](https://github.com/banishwor/esei/releases) page — the current release is [v1.9-switch](https://github.com/banishwor/esei/releases/download/v1.9-switch/Esei-Final-arm64-v8a.apk) (`Esei-Final-arm64-v8a.apk`). The app checks this repo's releases for updates. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
+Grab the latest signed APK from the [Releases](https://github.com/banishwor/esei/releases) page — or go straight to the [latest release](https://github.com/banishwor/esei/releases/latest). The app checks this repo's releases for updates. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
 
 
 </div>
