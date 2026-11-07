@@ -1459,4 +1459,17 @@
     <string name="diwali_title">Esei की ओर से दीपावली की शुभकामनाएँ</string>
     <string name="diwali_subtitle">रोशनी का यह त्योहार आपके घर को खुशियों से और आपके दिनों को संगीत से भर दे।</string>
     <string name="diwali_cta">चलो जश्न मनाएँ</string>
+
+    <!-- v1.9.5: English pending translation (Android fallback text). -->
+    <string name="download_channel_description">Songs being saved to Downloads</string>
+    <string name="downloads_encrypted_note">Saved songs are encrypted and play only inside Esei</string>
+    <string name="downloads_storage_total">%1$s saved</string>
+    <string name="autosave_progress">Auto-save · %1$d%%</string>
+    <string name="youre_offline">You\'re offline</string>
+    <string name="offline_home_subtitle">No connection — your downloaded songs still play.</string>
+    <string name="automix_overview">Automix overview</string>
+    <string name="max_storage_for_downloads">Max storage for downloads</string>
+    <string name="max_storage_for_downloads_subtitle">Past this, the least-listened saves are removed</string>
+    <string name="download_storage_cap_dialog_subtitle">Liked songs, saves under a week old and the song playing are never removed</string>
+    <string name="storage_gb">%1$d GB</string>
 </resources>
