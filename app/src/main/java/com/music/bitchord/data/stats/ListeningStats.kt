@@ -613,6 +613,7 @@ object ListeningStats {
             }
             // Merge day-level sub-buckets for the flat days map and cross-month totals.
             addDaySubs(bucket)
+            repeat(24) { hours[it] += bucket.hours.getOrElse(it) { 0L } }
             bucket.days.forEach { (day, ms) ->
                 val candidate = "${bucket.month}-%02d".format(day)
                 val date = runCatching { LocalDate.parse(candidate) }.getOrNull()
@@ -621,6 +622,7 @@ object ListeningStats {
                     days[candidate] = (days[candidate] ?: 0L) + ms
                 }
             }
+            if (earliest == null || bucket.month < earliest!!) earliest = bucket.month
         }
 
         fun toSummary(period: ReplayPeriod, today: LocalDate): ReplaySummary {
