@@ -1011,7 +1011,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         song: Song,
         onResult: (added: Int, alreadyThere: Int, failed: Int) -> Unit = { _, _, _ -> },
     ) {
-        if (!requireSignIn() || playlists.isEmpty()) return
+        if (playlists.isEmpty()) return
+        // Signed out, only a playlist in the device store can take a track —
+        // that is all the picker offers then. Anything else it was handed is
+        // refused in [addOne] rather than sent to an account that isn't there.
+        if (!requireSignIn() &&
+            playlists.none { com.music.bitchord.data.spotify.LocalPlaylistStore.getPlaylist(it.playlistId) != null }
+        ) {
+            return
+        }
         viewModelScope.launch {
             val outcomes = playlists.map { addOne(it, song) }
             onResult(
@@ -1025,6 +1033,25 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private enum class AddOutcome { ADDED, ALREADY_THERE, FAILED }
 
     private suspend fun addOne(playlist: UserPlaylist, song: Song): AddOutcome {
+        // A playlist held in the device store takes the track here rather
+        // than at YouTube. Routed by membership in the store, so an account
+        // playlist can never be mistaken for one — and this is the only route
+        // open signed out, where the store's playlists are all the picker has.
+        com.music.bitchord.data.spotify.LocalPlaylistStore.getPlaylist(playlist.playlistId)?.let { local ->
+            val result = com.music.bitchord.data.spotify.LocalPlaylistStore
+                .addSongs(local.id, listOf(song))
+            return when {
+                result.added > 0 -> {
+                    // The playlist's page may be open behind the picker, as
+                    // on the account route below.
+                    appendToOpenPlaylist(local.browseId, song, null)
+                    AddOutcome.ADDED
+                }
+                result.alreadyThere > 0 -> AddOutcome.ALREADY_THERE
+                else -> AddOutcome.FAILED
+            }
+        }
+        if (!requireSignIn()) return AddOutcome.FAILED
         val openSongs = (_detailStack.value.firstOrNull { it.browseId == playlist.browseId }
             ?.songs as? UiState.Success)?.data
         val known = openSongs
@@ -1049,8 +1076,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * playlist the user has to add to again.
      */
     fun createPlaylist(title: String, privacy: PlaylistPrivacy, song: Song? = null) {
-        if (!requireSignIn()) return
         val name = title.trim().ifBlank { text(R.string.new_playlist) }
+        if (!requireSignIn()) {
+            // No account to hold it: the playlist goes to the device store,
+            // the same place an import lands when it can't reach YouTube
+            // Music. It is drawn from that store by the Library's On Device
+            // shelf, and [privacy] — an account concept — does not apply to it.
+            com.music.bitchord.data.spotify.LocalPlaylistStore
+                .savePlaylist(name, listOfNotNull(song))
+            return
+        }
         viewModelScope.launch {
             YtMusicRepository.createPlaylist(
                 title = name,
@@ -1161,6 +1196,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * row out from under the reader rather than waiting for a re-fetch.
      */
     fun removeFromPlaylist(browseId: String, song: Song) {
+        // A playlist in the device store is edited here rather than at
+        // YouTube: its tracks carry no per-entry id to remove by, and no
+        // account is needed. Routed by membership in the store, as [addOne]
+        // is, so an account playlist can never land here.
+        com.music.bitchord.data.spotify.LocalPlaylistStore.getPlaylist(browseId)?.let { local ->
+            com.music.bitchord.data.spotify.LocalPlaylistStore.removeSong(local.id, song.videoId)
+            // The open page is re-read from the store, the way every other
+            // device listing is when it changes under the reader.
+            reloadLocalDetail(browseId)
+            return
+        }
         val setVideoId = song.setVideoId ?: return
         if (!requireSignIn()) return
         val playlistId = browseId.removePrefix("VL")

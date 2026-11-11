@@ -81,7 +81,10 @@ import java.util.Locale
  * always the fallback for "I meant to do something with this song".
  *
  * Everything that writes to the account is hidden outright when [signedIn] is
- * false rather than shown and refused. A track playing from a local file or a
+ * false rather than shown and refused — Add to playlist is the exception, not
+ * a leak: signed out it files the track into the device store's playlists
+ * instead (see [com.music.bitchord.data.spotify.LocalPlaylistStore]). A track
+ * playing from a local file or a
  * finished download (`song.localUri != null`) carries no YouTube identity to
  * rate, fetch again or share, so it gets the offline player's rows instead:
  * Like and Add to playlist against the device's own playlists (see
@@ -288,7 +291,10 @@ fun SongActionsMenu(
         // player's own pair: a heart that files the track under this device's
         // Liked playlist, and the device's playlists. [likeStatus] is that
         // playlist's answer there, not YouTube's, and neither needs an account.
-        if (canRate) {
+        // Signed out over a streamed track, the playlist row is the device
+        // store's instead — the one account write that has somewhere local to
+        // go — so this group is drawn in every case, unlike the rating above.
+        run {
             if (startsGroup()) IosMenuSeparator()
             ActionRow(
                 icon = SfIcons.AddToPlaylist,

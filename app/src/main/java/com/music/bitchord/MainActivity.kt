@@ -4538,6 +4538,21 @@ private fun BitChordApp(
                         viewModel.removeFromPlaylist(it.browseId, song)
                     }
                 } ?: detail?.browseId
+                    // A page out of the device store is editable in the same
+                    // sense, by the store — no account ownership to confirm
+                    // and no per-entry id to wait for, so the row is offered
+                    // whenever the page is one of the store's.
+                    ?.takeIf {
+                        !fromPlayer &&
+                            com.music.bitchord.data.spotify.LocalPlaylistStore.getPlaylist(it) != null
+                    }
+                    ?.let { id ->
+                        {
+                            songActions = null
+                            viewModel.removeFromPlaylist(id, song)
+                        }
+                    }
+                    ?: detail?.browseId
                     ?.takeIf { !fromPlayer && song.localUri != null && OfflinePlaylists.isOfflinePlaylist(it) }
                     ?.let { id ->
                         {
@@ -4948,11 +4963,31 @@ private fun BitChordApp(
                 playlistTarget = null
                 creatingPlaylist = false
             }
+            // Signed out there is no account list to offer: the sheet runs
+            // over the device store's playlists instead, in its offline form —
+            // "Saved on this device", and no visibility to pick. The rows
+            // carry the store's own ids, which is how MainViewModel routes
+            // the add (and a create) to the store rather than to YouTube.
+            val localChoices = remember(localPlaylists) {
+                localPlaylists.map { playlist ->
+                    UserPlaylist(
+                        playlistId = playlist.id,
+                        title = playlist.title,
+                        subtitle = context.getString(
+                            R.string.local_playlist_subtitle,
+                            playlist.songs.size,
+                        ),
+                        thumbnailUrl = playlist.songs
+                            .firstOrNull { !it.thumbnailUrl.isNullOrBlank() }?.thumbnailUrl,
+                    )
+                }
+            }
             PlaylistPickerSheet(
-                playlists = playlists,
-                loading = playlistsLoading,
+                playlists = if (signedIn) playlists else localChoices,
+                loading = if (signedIn) playlistsLoading else false,
                 song = target,
                 startCreating = target == null,
+                offline = !signedIn,
                 onDismiss = dismiss,
                 onAdd = { picked ->
                     target?.let { song ->

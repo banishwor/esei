@@ -16,6 +16,67 @@ data class LocalPlaylist(
     val browseId: String get() = "local:playlist:$id"
 }
 
+/**
+ * The list edits behind [LocalPlaylistStore.addSongs] and
+ * [LocalPlaylistStore.removeSong], kept free of the store's
+ * SharedPreferences so the rules can be unit-tested directly.
+ *
+ * A playlist is matched the way [LocalPlaylistStore.getPlaylist] matches:
+ * by its raw id, by its browse id, or by either with a `VL` in front — the
+ * shapes the picker's rows and the pages that open it actually carry.
+ */
+internal object LocalPlaylistEdits {
+
+    private fun cleanId(id: String): String =
+        id.removePrefix("local:playlist:").removePrefix("VL")
+
+    private fun List<LocalPlaylist>.indexOf(id: String): Int {
+        val clean = cleanId(id)
+        return indexOfFirst { it.id == clean || it.id == id || it.browseId == id }
+    }
+
+    /**
+     * Appends [songs] to the named playlist, skipping any whose videoId is
+     * already there (or repeated within [songs] itself), in the order given.
+     */
+    fun addSongs(
+        playlists: List<LocalPlaylist>,
+        playlistId: String,
+        songs: List<Song>,
+    ): Pair<List<LocalPlaylist>, LocalPlaylistStore.AddResult> {
+        val index = playlists.indexOf(playlistId)
+        if (index < 0) return playlists to LocalPlaylistStore.AddResult(0, 0, found = false)
+        val target = playlists[index]
+        val known = target.songs.mapTo(HashSet()) { it.videoId }
+        val distinct = songs.distinctBy { it.videoId }
+        val fresh = distinct.filter { known.add(it.videoId) }
+        val result = LocalPlaylistStore.AddResult(
+            added = fresh.size,
+            alreadyThere = distinct.size - fresh.size,
+            found = true,
+        )
+        if (fresh.isEmpty()) return playlists to result
+        val updated = playlists.toMutableList()
+        updated[index] = target.copy(songs = target.songs + fresh)
+        return updated to result
+    }
+
+    /** Takes every row with [videoId] out of the named playlist. */
+    fun removeSong(
+        playlists: List<LocalPlaylist>,
+        playlistId: String,
+        videoId: String,
+    ): Pair<List<LocalPlaylist>, Boolean> {
+        val index = playlists.indexOf(playlistId)
+        if (index < 0) return playlists to false
+        val target = playlists[index]
+        if (target.songs.none { it.videoId == videoId }) return playlists to false
+        val updated = playlists.toMutableList()
+        updated[index] = target.copy(songs = target.songs.filterNot { it.videoId == videoId })
+        return updated to true
+    }
+}
+
 object LocalPlaylistStore {
     private const val PREF_NAME = "bitchord_local_playlists"
     private const val KEY_PLAYLISTS = "playlists_json"
@@ -70,6 +131,34 @@ object LocalPlaylistStore {
         _playlists.value = updated
         persist(updated)
         return playlist
+    }
+
+    /** What an [addSongs] call did: [found] is false when no playlist carries the id. */
+    class AddResult(val added: Int, val alreadyThere: Int, val found: Boolean)
+
+    /**
+     * Adds [songs] to the playlist [id] names (any of the shapes
+     * [getPlaylist] accepts), skipping tracks already in it by videoId —
+     * a duplicate row is not something the user asked for, and YouTube's own
+     * playlists are held to the same rule by their caller.
+     */
+    fun addSongs(id: String, songs: List<Song>): AddResult {
+        val (updated, result) = LocalPlaylistEdits.addSongs(_playlists.value, id, songs)
+        if (result.added > 0) {
+            _playlists.value = updated
+            persist(updated)
+        }
+        return result
+    }
+
+    /** Removes [videoId] from the playlist [id] names; true when a row went. */
+    fun removeSong(id: String, videoId: String): Boolean {
+        val (updated, removed) = LocalPlaylistEdits.removeSong(_playlists.value, id, videoId)
+        if (removed) {
+            _playlists.value = updated
+            persist(updated)
+        }
+        return removed
     }
 
     fun deletePlaylist(id: String) {
