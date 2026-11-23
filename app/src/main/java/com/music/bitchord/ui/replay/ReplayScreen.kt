@@ -451,6 +451,9 @@ private fun LazyListScope.chart(
 ) {
     if (rows.isEmpty()) return
     item("$key-title") { SectionTitle(title, dark) }
+    // The rank is in the key so two rows can never share one: a duplicate key
+    // crashes the whole list, and the data behind these rows is years of files
+    // written by older builds.
     items(rows, key = { "$key-${it.rank}-${it.key}" }) { row ->
         ReplayChartRow(row, circular, dark) { onClick(row.rank - 1) }
     }
